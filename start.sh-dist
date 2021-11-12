@@ -1,0 +1,5 @@
+#!/bin/sh
+export AGGREGATE_CHANNEL_ID='CHANNEL_ID'
+export SLACK_APP_TOKEN='xapp-TOKEN'
+export SLACK_BOT_TOKEN='xoxb-TOKEN'
+./main
