@@ -13,3 +13,9 @@
 
 # VSCode Launch info(hide debug token)
 .vscode/launch.json
+
+# binary
+main
+
+# startup script
+start.sh
