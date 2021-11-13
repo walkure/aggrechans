@@ -76,15 +76,19 @@ func getChannelList(ctx context.Context, api *slack.Client) ([]slack.Channel, er
 	}
 }
 
-func (info *ChannelInfo) GetLink(ev *slackevents.MessageEvent) (string, error) {
+func (info *ChannelInfo) GetMessageLink(ev *slackevents.MessageEvent) (string, error) {
 	name, err := info.GetName(ev.Channel)
 	if err != nil {
 		return "", fmt.Errorf("cannot convert channel id:%w", err)
 	}
 
-	mid := strings.Replace(ev.TimeStamp, ".", "", -1)
+	return fmt.Sprintf("`<%s|#%s>`", info.GetMessageUri(ev), name), nil
+}
 
-	return fmt.Sprintf("`<https://%s.slack.com/archives/%s/p%s|#%s>`", info.domain, ev.Channel, mid, name), nil
+func (info *ChannelInfo) GetMessageUri(ev *slackevents.MessageEvent) string {
+	// cannot follow links at smartphone app. whils exists "." in  message id.
+	mid := strings.Replace(ev.TimeStamp, ".", "", -1)
+	return fmt.Sprintf("https://%s.slack.com/archives/%s/p%s", info.domain, ev.Channel, mid)
 }
 
 func (info *ChannelInfo) GetName(cid string) (string, error) {

@@ -143,61 +143,32 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 		return
 	}
 
-	chanLink, err := ci.GetLink(ev)
+	msgLink, err := ci.GetMessageLink(ev)
 	if err != nil {
 		fmt.Printf("cannot resolve cnannel name:%v\n", err)
 		return
 	}
 
-	msg, err := ui.ReplaceMentionUIDs(text)
-	if err != nil {
-		fmt.Printf("cannot resolve mentions:%v\n", err)
-		return
-	}
+	msg := ""
+	if ev.SubType == "file_share" {
+		msg = ci.GetMessageUri(ev)
+	} else {
 
-	msg = common.EscapeChannelCall(msg)
-
-	fullMsg := chanLink + " " + msg
-	blocks := []slack.Block{slack.NewSectionBlock(slack.NewTextBlockObject(slack.MarkdownType, fullMsg, false, false), nil, nil)}
-	if ev.Files != nil {
-		for _, f := range ev.Files {
-			thumb := findLargestThumbnails(f)
-			if thumb != "" {
-				text = text + "\n" + thumb
-				blocks = append(blocks, slack.NewSectionBlock(
-					slack.NewTextBlockObject(slack.MarkdownType, f.Name, false, false), nil,
-					slack.NewAccessory(slack.NewImageBlockElement(thumb, f.Name))))
-			}
+		msg, err = ui.ReplaceMentionUIDs(text)
+		if err != nil {
+			fmt.Printf("cannot resolve mentions:%v\n", err)
+			return
 		}
+
+		msg = common.EscapeChannelCall(msg)
 	}
-	err = postMessage(api, prof, &blocks, fullMsg)
+
+	fullMsg := msgLink + " " + msg
+
+	err = postMessage(api, prof, nil, fullMsg)
 	if err != nil {
 		fmt.Printf("postMessage err:%v\n", err)
 	}
-}
-
-func findLargestThumbnails(ev slackevents.File) string {
-	if ev.Thumb480 != "" {
-		return ev.Thumb480
-	}
-
-	if ev.Thumb360 != "" {
-		return ev.Thumb360
-	}
-
-	if ev.Thumb160 != "" {
-		return ev.Thumb160
-	}
-
-	if ev.Thumb80 != "" {
-		return ev.Thumb80
-	}
-
-	if ev.Thumb64 != "" {
-		return ev.Thumb64
-	}
-
-	return ""
 }
 
 func postMessage(api *slack.Client, prof *common.UserProfile, blocks *[]slack.Block, msg string) error {
@@ -206,7 +177,7 @@ func postMessage(api *slack.Client, prof *common.UserProfile, blocks *[]slack.Bl
 		slack.MsgOptionUsername(prof.Name),
 		slack.MsgOptionIconURL(prof.Avatar)}
 
-	if len(*blocks) > 1 {
+	if blocks != nil && len(*blocks) > 1 {
 		options = append(options, slack.MsgOptionBlocks(*blocks...))
 	}
 
