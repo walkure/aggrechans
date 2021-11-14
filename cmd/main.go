@@ -118,14 +118,14 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 	default:
 		fmt.Printf("ignore subtype:%s\n", ev.SubType)
 		return
-	case "message_changed":
+	case slack.MsgSubTypeMessageChanged:
 		if ev.Message != nil {
 			text = ev.Message.Text
 			if ev.Message.Edited != nil {
 				uid = ev.Message.Edited.User
 			}
 		}
-	case "file_share", "channel_topic", "channel_purpose", "":
+	case slack.MsgSubTypeFileShare, slack.MsgSubTypeChannelTopic, slack.MsgSubTypeChannelPurpose, "":
 	}
 
 	if uid == "" {
@@ -150,9 +150,9 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 
 	msg := ""
 	switch ev.SubType {
-	case "file_share":
+	case slack.MsgSubTypeFileShare:
 		msg = ci.GetMessageUri(ev)
-	case "channel_topic", "channel_purpose":
+	case slack.MsgSubTypeChannelTopic, slack.MsgSubTypeChannelPurpose:
 		msg = prof.Name + " " + ev.Text
 	default:
 		msg, err = ui.ReplaceMentionUIDs(text)
