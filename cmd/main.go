@@ -99,7 +99,7 @@ func main() {
 					}
 
 				default:
-					client.Debugf("unsupported Events API event received")
+					fmt.Printf("unsupported Events API event received: %s\n", eventsAPIEvent.Type)
 				}
 			default:
 				fmt.Fprintf(os.Stderr, "Unexpected event type received: %s\n", evt.Type)
