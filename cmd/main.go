@@ -125,8 +125,7 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 				uid = ev.Message.Edited.User
 			}
 		}
-	case "file_share":
-	case "":
+	case "file_share", "":
 	}
 
 	if uid == "" {
