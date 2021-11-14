@@ -152,18 +152,15 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 	switch ev.SubType {
 	case slack.MsgSubTypeFileShare:
 		msg = ci.GetMessageUri(ev)
-	case slack.MsgSubTypeChannelTopic, slack.MsgSubTypeChannelPurpose:
-		msg = prof.Name + " " + ev.Text
 	default:
 		msg, err = ui.ReplaceMentionUIDs(text)
 		if err != nil {
 			fmt.Printf("cannot resolve mentions:%v\n", err)
 			return
 		}
-
+		msg = common.EscapeChannelCall(msg)
 	}
 
-	msg = common.EscapeChannelCall(msg)
 	fullMsg := msgLink + " " + msg
 
 	err = postMessage(api, prof, nil, fullMsg)
