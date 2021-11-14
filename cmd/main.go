@@ -125,7 +125,7 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 				uid = ev.Message.Edited.User
 			}
 		}
-	case "file_share", "":
+	case "file_share", "channel_topic", "channel_purpose", "":
 	}
 
 	if uid == "" {
@@ -149,19 +149,21 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 	}
 
 	msg := ""
-	if ev.SubType == "file_share" {
+	switch ev.SubType {
+	case "file_share":
 		msg = ci.GetMessageUri(ev)
-	} else {
-
+	case "channel_topic", "channel_purpose":
+		msg = prof.Name + " " + ev.Text
+	default:
 		msg, err = ui.ReplaceMentionUIDs(text)
 		if err != nil {
 			fmt.Printf("cannot resolve mentions:%v\n", err)
 			return
 		}
 
-		msg = common.EscapeChannelCall(msg)
 	}
 
+	msg = common.EscapeChannelCall(msg)
 	fullMsg := msgLink + " " + msg
 
 	err = postMessage(api, prof, nil, fullMsg)
