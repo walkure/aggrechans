@@ -82,7 +82,7 @@ func (info *ChannelInfo) GetMessageLink(ev *slackevents.MessageEvent) (string, e
 		return "", fmt.Errorf("cannot convert channel id:%w", err)
 	}
 
-	return fmt.Sprintf("`<%s|#%s>`", info.GetMessageUri(ev), name), nil
+	return fmt.Sprintf("<%s|`#%s`>", info.GetMessageUri(ev), name), nil
 }
 
 func (info *ChannelInfo) GetMessageUri(ev *slackevents.MessageEvent) string {

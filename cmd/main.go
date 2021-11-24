@@ -151,9 +151,11 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 	}
 
 	msg := ""
+	disableUnfurlLink := true
 	switch ev.SubType {
 	case slack.MsgSubTypeFileShare:
-		msg = ci.GetMessageUri(ev)
+		msg = ""
+		disableUnfurlLink = false
 	default:
 		msg, err = ui.ReplaceMentionUIDs(text)
 		if err != nil {
@@ -165,13 +167,13 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 
 	fullMsg := msgLink + " " + msg
 
-	err = postMessage(api, prof, nil, fullMsg)
+	err = postMessage(api, prof, nil, disableUnfurlLink, fullMsg)
 	if err != nil {
 		fmt.Printf("postMessage err:%v\n", err)
 	}
 }
 
-func postMessage(api *slack.Client, prof *common.UserProfile, blocks *[]slack.Block, msg string) error {
+func postMessage(api *slack.Client, prof *common.UserProfile, blocks *[]slack.Block, disableUnfurlLink bool, msg string) error {
 
 	options := []slack.MsgOption{slack.MsgOptionText(msg, false),
 		slack.MsgOptionUsername(prof.Name),
@@ -179,6 +181,10 @@ func postMessage(api *slack.Client, prof *common.UserProfile, blocks *[]slack.Bl
 
 	if blocks != nil && len(*blocks) > 1 {
 		options = append(options, slack.MsgOptionBlocks(*blocks...))
+	}
+
+	if disableUnfurlLink {
+		options = append(options, slack.MsgOptionDisableLinkUnfurl())
 	}
 
 	_, _, err := common.PostMessageContext(context.TODO(), api, AGG_CHAN_ID, options...)
