@@ -28,6 +28,7 @@ Slackの全Public channelにおける人間の発言を一つのチャンネル�
 #### bot events
 
 - `channel_rename` - チャンネルのリネーム
+- `channel_created` - チャンネルの作成
 - `user_change` - ユーザ情報の変更
 
 #### user events

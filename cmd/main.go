@@ -98,6 +98,8 @@ func main() {
 						chinfo.UpdateName(ev.Channel)
 					case *slack.UserChangeEvent:
 						uinfo.HandleUserChangeEvent(ev)
+					case *slackevents.ChannelCreatedEvent:
+						chinfo.HandleCreateEvent(ev.Channel)
 					default:
 						fmt.Printf("unsupported Callback Event received: %T\n", ev)
 					}

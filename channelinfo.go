@@ -116,3 +116,7 @@ func (info *ChannelInfo) UpdateName(chinfo slackevents.ChannelRenameInfo) {
 	}
 	info.name[chinfo.ID] = chinfo.Name
 }
+
+func (info *ChannelInfo) HandleCreateEvent(chinfo slackevents.ChannelCreatedInfo) {
+	info.name[chinfo.ID] = chinfo.Name
+}
