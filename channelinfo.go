@@ -38,9 +38,6 @@ func InitChanInfo(api *slack.Client) (*ChannelInfo, error) {
 	}
 
 	for _, ch := range chans {
-		if ch.IsArchived {
-			continue
-		}
 		info.name[ch.ID] = ch.Name
 	}
 	//api.Debugf("loaded %d channels\n", len(info.name))
@@ -51,7 +48,7 @@ func InitChanInfo(api *slack.Client) (*ChannelInfo, error) {
 }
 
 func getChannelList(ctx context.Context, api *slack.Client) ([]slack.Channel, error) {
-	req := slack.GetConversationsParameters{}
+	req := slack.GetConversationsParameters{ExcludeArchived: true}
 	var results []slack.Channel
 
 	for {
