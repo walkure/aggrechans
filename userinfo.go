@@ -59,6 +59,10 @@ func (info *UserInfo) GetUserProfile(uid string) (*UserProfile, error) {
 	return info.name[uid], nil
 }
 
+func (info *UserInfo) HandleUserChangeEvent(ev *slack.UserChangeEvent) {
+	info.setUserInfo(&ev.User)
+}
+
 func (info *UserInfo) setUserInfo(user *slack.User) {
 	info.name[user.ID] = &UserProfile{
 		Name:   user.Name,

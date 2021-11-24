@@ -96,6 +96,8 @@ func main() {
 						messageEventHandler(api, client, ev, chinfo, uinfo)
 					case *slackevents.ChannelRenameEvent:
 						chinfo.UpdateName(ev.Channel)
+					case *slack.UserChangeEvent:
+						uinfo.HandleUserChangeEvent(ev)
 					}
 
 				default:
