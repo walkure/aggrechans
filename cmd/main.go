@@ -100,6 +100,13 @@ func main() {
 						uinfo.HandleUserChangeEvent(ev)
 					case *slackevents.ChannelCreatedEvent:
 						chinfo.HandleCreateEvent(ev.Channel)
+					case *slackevents.ChannelUnarchiveEvent:
+						name, err := chinfo.GetName(ev.Channel)
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "Failure handling unarchive channel(id=%s): %+v\n", ev.Channel, err)
+						} else {
+							fmt.Printf("Channel[%s](%s) unarchived\n", name, ev.Channel)
+						}
 					default:
 						fmt.Printf("unsupported Callback Event received: %T\n", ev)
 					}
