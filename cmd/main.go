@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
@@ -58,17 +59,32 @@ func main() {
 		os.Exit(-1)
 	}
 
-	chinfo, err := common.InitChanInfo(context.TODO(), api)
-	if err != nil {
-		fmt.Printf("cannot init channel info:%v", err)
-		os.Exit(-1)
-	}
+	ctx := context.Background()
+	wg := &sync.WaitGroup{}
+	chinfo := &common.ChannelInfo{}
+	uinfo := &common.UserInfo{}
 
-	uinfo, err := common.InitUserInfo(context.TODO(), api)
-	if err != nil {
-		fmt.Printf("cannot init channel info:%v", err)
-		os.Exit(-1)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		chinfo, err = common.InitChanInfo(ctx, api)
+		if err != nil {
+			fmt.Printf("cannot init channel info:%v", err)
+			os.Exit(-1)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		uinfo, err = common.InitUserInfo(ctx, api)
+		if err != nil {
+			fmt.Printf("cannot init channel info:%v", err)
+			os.Exit(-1)
+		}
+	}()
+
+	wg.Wait()
 
 	go func() {
 		for evt := range client.Events {
