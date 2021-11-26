@@ -144,8 +144,7 @@ func messageEventHandler(ctx context.Context, api *slack.Client, client *socketm
 	text := ev.Text
 	uid := ev.User
 	switch ev.SubType {
-	default:
-		fmt.Printf("ignore subtype:%s\n", ev.SubType)
+	case slack.MsgSubTypeBotMessage:
 		return
 	case slack.MsgSubTypeMessageChanged:
 		if ev.Message != nil {
@@ -155,6 +154,10 @@ func messageEventHandler(ctx context.Context, api *slack.Client, client *socketm
 			}
 		}
 	case slack.MsgSubTypeFileShare, slack.MsgSubTypeChannelTopic, slack.MsgSubTypeChannelPurpose, "":
+		// continue
+	default:
+		fmt.Printf("ignore subtype:%s\n", ev.SubType)
+		return
 	}
 
 	if uid == "" {
