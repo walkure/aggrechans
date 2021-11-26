@@ -178,26 +178,8 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 
 	fullMsg := msgLink + " " + msg
 
-	err = postMessage(api, prof, nil, disableUnfurlLink, fullMsg)
+	err = common.PostMessage(context.TODO(), api, prof, nil, disableUnfurlLink, fullMsg, AGG_CHAN_ID)
 	if err != nil {
 		fmt.Printf("postMessage err:%v\n", err)
 	}
-}
-
-func postMessage(api *slack.Client, prof *common.UserProfile, blocks *[]slack.Block, disableUnfurlLink bool, msg string) error {
-
-	options := []slack.MsgOption{slack.MsgOptionText(msg, false),
-		slack.MsgOptionUsername(prof.Name),
-		slack.MsgOptionIconURL(prof.Avatar)}
-
-	if blocks != nil && len(*blocks) > 1 {
-		options = append(options, slack.MsgOptionBlocks(*blocks...))
-	}
-
-	if disableUnfurlLink {
-		options = append(options, slack.MsgOptionDisableLinkUnfurl())
-	}
-
-	_, _, err := common.PostMessageContext(context.TODO(), api, AGG_CHAN_ID, options...)
-	return err
 }

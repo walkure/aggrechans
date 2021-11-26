@@ -9,7 +9,25 @@ import (
 	"github.com/slack-go/slack"
 )
 
-func PostMessageContext(ctx context.Context, api *slack.Client, channelID string, options ...slack.MsgOption) (string, string, error) {
+func PostMessage(ctx context.Context, api *slack.Client, prof *UserProfile, blocks *[]slack.Block, disableUnfurlLink bool, msg string, channel string) error {
+
+	options := []slack.MsgOption{slack.MsgOptionText(msg, false),
+		slack.MsgOptionUsername(prof.Name),
+		slack.MsgOptionIconURL(prof.Avatar)}
+
+	if blocks != nil && len(*blocks) > 1 {
+		options = append(options, slack.MsgOptionBlocks(*blocks...))
+	}
+
+	if disableUnfurlLink {
+		options = append(options, slack.MsgOptionDisableLinkUnfurl())
+	}
+
+	_, _, err := postMessageWithRetry(ctx, api, channel, options...)
+	return err
+}
+
+func postMessageWithRetry(ctx context.Context, api *slack.Client, channelID string, options ...slack.MsgOption) (string, string, error) {
 	for {
 		respChannel, respTimestamp, err := api.PostMessageContext(ctx, channelID, options...)
 		if err == nil {
