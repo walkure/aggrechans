@@ -66,7 +66,7 @@ func main() {
 				client.Ack(*evt.Request)
 				switch eventsAPIEvent.Type {
 				case slackevents.CallbackEvent:
-					callbackEventHandler(context.TODO(), api, client, eventsAPIEvent, chinfo, uinfo)
+					common.CallbackEventHandler(context.TODO(), api, client, eventsAPIEvent, chinfo, uinfo, AGG_CHAN_ID)
 				default:
 					fmt.Printf("unsupported Events API event received: %s\n", eventsAPIEvent.Type)
 				}

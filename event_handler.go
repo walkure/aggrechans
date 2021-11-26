@@ -1,4 +1,4 @@
-package main
+package common
 
 import (
 	"context"
@@ -8,15 +8,13 @@ import (
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
-
-	common "github.com/walkure/aggrechans"
 )
 
-func callbackEventHandler(ctx context.Context, api *slack.Client, client *socketmode.Client, eventsAPIEvent slackevents.EventsAPIEvent, ci *common.ChannelInfo, ui *common.UserInfo) {
+func CallbackEventHandler(ctx context.Context, api *slack.Client, client *socketmode.Client, eventsAPIEvent slackevents.EventsAPIEvent, ci *ChannelInfo, ui *UserInfo, dstChannel string) {
 	innerEvent := eventsAPIEvent.InnerEvent
 	switch ev := innerEvent.Data.(type) {
 	case *slackevents.MessageEvent:
-		messageEventHandler(ctx, api, client, ev, ci, ui)
+		messageEventHandler(ctx, api, client, ev, ci, ui, dstChannel)
 	case *slackevents.ChannelRenameEvent:
 		ci.UpdateName(ev.Channel)
 	case *slack.UserChangeEvent:
@@ -35,7 +33,7 @@ func callbackEventHandler(ctx context.Context, api *slack.Client, client *socket
 	}
 }
 
-func messageEventHandler(ctx context.Context, api *slack.Client, client *socketmode.Client, ev *slackevents.MessageEvent, ci *common.ChannelInfo, ui *common.UserInfo) {
+func messageEventHandler(ctx context.Context, api *slack.Client, client *socketmode.Client, ev *slackevents.MessageEvent, ci *ChannelInfo, ui *UserInfo, dstChannel string) {
 
 	text := ev.Text
 	uid := ev.User
@@ -88,12 +86,12 @@ func messageEventHandler(ctx context.Context, api *slack.Client, client *socketm
 			fmt.Printf("cannot resolve mentions:%v\n", err)
 			return
 		}
-		msg = common.EscapeChannelCall(msg)
+		msg = EscapeChannelCall(msg)
 	}
 
 	fullMsg := msgLink + " " + msg
 
-	err = common.PostMessage(ctx, api, prof, nil, disableUnfurlLink, fullMsg, AGG_CHAN_ID)
+	err = PostMessage(ctx, api, prof, nil, disableUnfurlLink, fullMsg, dstChannel)
 	if err != nil {
 		fmt.Printf("postMessage err:%v\n", err)
 	}
