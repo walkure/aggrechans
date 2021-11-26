@@ -6,7 +6,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
 
@@ -67,27 +66,7 @@ func main() {
 				client.Ack(*evt.Request)
 				switch eventsAPIEvent.Type {
 				case slackevents.CallbackEvent:
-					innerEvent := eventsAPIEvent.InnerEvent
-					switch ev := innerEvent.Data.(type) {
-					case *slackevents.MessageEvent:
-						messageEventHandler(context.TODO(), api, client, ev, chinfo, uinfo)
-					case *slackevents.ChannelRenameEvent:
-						chinfo.UpdateName(ev.Channel)
-					case *slack.UserChangeEvent:
-						uinfo.HandleUserChangeEvent(ev)
-					case *slackevents.ChannelCreatedEvent:
-						chinfo.HandleCreateEvent(ev.Channel)
-					case *slackevents.ChannelUnarchiveEvent:
-						name, err := chinfo.GetName(context.TODO(), ev.Channel)
-						if err != nil {
-							fmt.Fprintf(os.Stderr, "Failure handling unarchive channel(id=%s): %+v\n", ev.Channel, err)
-						} else {
-							fmt.Printf("Channel[%s](%s) unarchived\n", name, ev.Channel)
-						}
-					default:
-						fmt.Printf("unsupported Callback Event received: %T\n", ev)
-					}
-
+					callbackEventHandler(context.TODO(), api, client, eventsAPIEvent, chinfo, uinfo)
 				default:
 					fmt.Printf("unsupported Events API event received: %s\n", eventsAPIEvent.Type)
 				}

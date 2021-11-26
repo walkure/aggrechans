@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
@@ -10,6 +11,29 @@ import (
 
 	common "github.com/walkure/aggrechans"
 )
+
+func callbackEventHandler(ctx context.Context, api *slack.Client, client *socketmode.Client, eventsAPIEvent slackevents.EventsAPIEvent, ci *common.ChannelInfo, ui *common.UserInfo) {
+	innerEvent := eventsAPIEvent.InnerEvent
+	switch ev := innerEvent.Data.(type) {
+	case *slackevents.MessageEvent:
+		messageEventHandler(ctx, api, client, ev, ci, ui)
+	case *slackevents.ChannelRenameEvent:
+		ci.UpdateName(ev.Channel)
+	case *slack.UserChangeEvent:
+		ui.HandleUserChangeEvent(ev)
+	case *slackevents.ChannelCreatedEvent:
+		ci.HandleCreateEvent(ev.Channel)
+	case *slackevents.ChannelUnarchiveEvent:
+		name, err := ci.GetName(ctx, ev.Channel)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failure handling unarchive channel(id=%s): %+v\n", ev.Channel, err)
+		} else {
+			fmt.Printf("Channel[%s](%s) unarchived\n", name, ev.Channel)
+		}
+	default:
+		fmt.Printf("unsupported Callback Event received: %T\n", ev)
+	}
+}
 
 func messageEventHandler(ctx context.Context, api *slack.Client, client *socketmode.Client, ev *slackevents.MessageEvent, ci *common.ChannelInfo, ui *common.UserInfo) {
 
