@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -19,12 +20,12 @@ type UserProfile struct {
 	app    bool
 }
 
-func InitUserInfo(api *slack.Client) (*UserInfo, error) {
+func InitUserInfo(ctx context.Context, api *slack.Client) (*UserInfo, error) {
 	info := UserInfo{}
 	info.name = make(map[string]*UserProfile)
 	info.api = api
 
-	users, err := api.GetUsers()
+	users, err := api.GetUsersContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("err at users.list:%w", err)
 	}
@@ -41,7 +42,7 @@ func (prof *UserProfile) IsBots() bool {
 	return prof.bot || prof.app
 }
 
-func (info *UserInfo) GetUserProfile(uid string) (*UserProfile, error) {
+func (info *UserInfo) GetUserProfile(ctx context.Context, uid string) (*UserProfile, error) {
 	if prof, ok := info.name[uid]; ok {
 		return prof, nil
 	}
@@ -50,7 +51,7 @@ func (info *UserInfo) GetUserProfile(uid string) (*UserProfile, error) {
 		return nil, fmt.Errorf("uid=%s is bot", uid)
 	}
 
-	user, err := info.api.GetUserInfo(uid)
+	user, err := info.api.GetUserInfoContext(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("err at users.info(uid=%s):%w", uid, err)
 	}
@@ -72,13 +73,13 @@ func (info *UserInfo) setUserInfo(user *slack.User) {
 	}
 }
 
-func (info *UserInfo) ReplaceMentionUIDs(orig string) (string, error) {
+func (info *UserInfo) ReplaceMentionUIDs(ctx context.Context, orig string) (string, error) {
 
 	uids := extractUids(orig)
 
 	oldnews := []string{}
 	for _, uid := range uids {
-		prof, err := info.GetUserProfile(uid)
+		prof, err := info.GetUserProfile(ctx, uid)
 		if err != nil {
 			return "", fmt.Errorf("error replacing uids:%w", err)
 		}

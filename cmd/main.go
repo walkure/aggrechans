@@ -58,13 +58,13 @@ func main() {
 		os.Exit(-1)
 	}
 
-	chinfo, err := common.InitChanInfo(api)
+	chinfo, err := common.InitChanInfo(context.TODO(), api)
 	if err != nil {
 		fmt.Printf("cannot init channel info:%v", err)
 		os.Exit(-1)
 	}
 
-	uinfo, err := common.InitUserInfo(api)
+	uinfo, err := common.InitUserInfo(context.TODO(), api)
 	if err != nil {
 		fmt.Printf("cannot init channel info:%v", err)
 		os.Exit(-1)
@@ -93,7 +93,7 @@ func main() {
 					innerEvent := eventsAPIEvent.InnerEvent
 					switch ev := innerEvent.Data.(type) {
 					case *slackevents.MessageEvent:
-						messageEventHandler(api, client, ev, chinfo, uinfo)
+						messageEventHandler(context.TODO(), api, client, ev, chinfo, uinfo)
 					case *slackevents.ChannelRenameEvent:
 						chinfo.UpdateName(ev.Channel)
 					case *slack.UserChangeEvent:
@@ -101,7 +101,7 @@ func main() {
 					case *slackevents.ChannelCreatedEvent:
 						chinfo.HandleCreateEvent(ev.Channel)
 					case *slackevents.ChannelUnarchiveEvent:
-						name, err := chinfo.GetName(ev.Channel)
+						name, err := chinfo.GetName(context.TODO(), ev.Channel)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Failure handling unarchive channel(id=%s): %+v\n", ev.Channel, err)
 						} else {
@@ -123,7 +123,7 @@ func main() {
 	client.Run()
 }
 
-func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slackevents.MessageEvent, ci *common.ChannelInfo, ui *common.UserInfo) {
+func messageEventHandler(ctx context.Context, api *slack.Client, client *socketmode.Client, ev *slackevents.MessageEvent, ci *common.ChannelInfo, ui *common.UserInfo) {
 
 	text := ev.Text
 	uid := ev.User
@@ -145,7 +145,7 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 		return
 	}
 
-	prof, err := ui.GetUserProfile(uid)
+	prof, err := ui.GetUserProfile(ctx, uid)
 	if err != nil {
 		fmt.Printf("cannot get user profile:%v\n", err)
 		return
@@ -155,7 +155,7 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 		return
 	}
 
-	msgLink, err := ci.GetMessageLink(ev)
+	msgLink, err := ci.GetMessageLink(ctx, ev)
 	if err != nil {
 		fmt.Printf("cannot resolve cnannel name:%v\n", err)
 		return
@@ -168,7 +168,7 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 		msg = ""
 		disableUnfurlLink = false
 	default:
-		msg, err = ui.ReplaceMentionUIDs(text)
+		msg, err = ui.ReplaceMentionUIDs(ctx, text)
 		if err != nil {
 			fmt.Printf("cannot resolve mentions:%v\n", err)
 			return
@@ -178,7 +178,7 @@ func messageEventHandler(api *slack.Client, client *socketmode.Client, ev *slack
 
 	fullMsg := msgLink + " " + msg
 
-	err = common.PostMessage(context.TODO(), api, prof, nil, disableUnfurlLink, fullMsg, AGG_CHAN_ID)
+	err = common.PostMessage(ctx, api, prof, nil, disableUnfurlLink, fullMsg, AGG_CHAN_ID)
 	if err != nil {
 		fmt.Printf("postMessage err:%v\n", err)
 	}

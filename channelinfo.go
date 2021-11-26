@@ -17,18 +17,18 @@ type ChannelInfo struct {
 	api    *slack.Client
 }
 
-func InitChanInfo(api *slack.Client) (*ChannelInfo, error) {
+func InitChanInfo(ctx context.Context, api *slack.Client) (*ChannelInfo, error) {
 	info := ChannelInfo{}
 	info.name = make(map[string]string)
 	info.api = api
 
-	tinfo, err := api.GetTeamInfo()
+	tinfo, err := api.GetTeamInfoContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("err at team.info:%w", err)
 	}
 	info.domain = tinfo.Domain
 
-	chans, err := getChannelList(context.Background(), api)
+	chans, err := getChannelList(ctx, api)
 	if err != nil {
 		return nil, fmt.Errorf("err at conversations.list:%w", err)
 	}
@@ -73,8 +73,8 @@ func getChannelList(ctx context.Context, api *slack.Client) ([]slack.Channel, er
 	}
 }
 
-func (info *ChannelInfo) GetMessageLink(ev *slackevents.MessageEvent) (string, error) {
-	name, err := info.GetName(ev.Channel)
+func (info *ChannelInfo) GetMessageLink(ctx context.Context, ev *slackevents.MessageEvent) (string, error) {
+	name, err := info.GetName(ctx, ev.Channel)
 	if err != nil {
 		return "", fmt.Errorf("cannot convert channel id:%w", err)
 	}
@@ -88,13 +88,13 @@ func (info *ChannelInfo) GetMessageUri(ev *slackevents.MessageEvent) string {
 	return fmt.Sprintf("https://%s.slack.com/archives/%s/p%s", info.domain, ev.Channel, mid)
 }
 
-func (info *ChannelInfo) GetName(cid string) (string, error) {
+func (info *ChannelInfo) GetName(ctx context.Context, cid string) (string, error) {
 
 	if name, ok := info.name[cid]; ok {
 		return name, nil
 	}
 
-	cinfo, err := info.api.GetConversationInfo(cid, false)
+	cinfo, err := info.api.GetConversationInfoContext(ctx, cid, false)
 	if err != nil {
 		return "", fmt.Errorf("err at conversations.info(cid=%s):%w", cid, err)
 	}
