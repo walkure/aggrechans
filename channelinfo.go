@@ -17,7 +17,7 @@ type ChannelInfo struct {
 	api    *slack.Client
 }
 
-func InitChanInfo(ctx context.Context, api *slack.Client) (*ChannelInfo, error) {
+func CreateChanInfo(ctx context.Context, api *slack.Client) (*ChannelInfo, error) {
 	info := ChannelInfo{}
 	info.name = make(map[string]string)
 	info.api = api
@@ -27,6 +27,16 @@ func InitChanInfo(ctx context.Context, api *slack.Client) (*ChannelInfo, error) 
 		return nil, fmt.Errorf("err at team.info:%w", err)
 	}
 	info.domain = tinfo.Domain
+	fmt.Printf("team_domain=%s\n", info.domain)
+
+	return &info, nil
+}
+
+func InitChanInfo(ctx context.Context, api *slack.Client) (*ChannelInfo, error) {
+	info, err := CreateChanInfo(ctx, api)
+	if err != nil {
+		return nil, err
+	}
 
 	chans, err := getChannelList(ctx, api)
 	if err != nil {
@@ -41,9 +51,9 @@ func InitChanInfo(ctx context.Context, api *slack.Client) (*ChannelInfo, error) 
 		info.name[ch.ID] = ch.Name
 	}
 	//api.Debugf("loaded %d channels\n", len(info.name))
-	fmt.Printf("loaded %d channels.team_domain=%s\n", len(info.name), info.domain)
+	fmt.Printf("loaded %d channels.\n", len(info.name))
 
-	return &info, nil
+	return info, nil
 
 }
 

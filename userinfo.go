@@ -20,10 +20,16 @@ type UserProfile struct {
 	app    bool
 }
 
-func InitUserInfo(ctx context.Context, api *slack.Client) (*UserInfo, error) {
+func CreateUserInfo(api *slack.Client) *UserInfo {
 	info := UserInfo{}
 	info.name = make(map[string]*UserProfile)
 	info.api = api
+
+	return &info
+}
+
+func InitUserInfo(ctx context.Context, api *slack.Client) (*UserInfo, error) {
+	info := CreateUserInfo(api)
 
 	users, err := api.GetUsersContext(ctx)
 	if err != nil {
@@ -35,7 +41,7 @@ func InitUserInfo(ctx context.Context, api *slack.Client) (*UserInfo, error) {
 	//api.Debugf("loaded %d users\n", len(info.name))
 	fmt.Printf("loaded %d users\n", len(info.name))
 
-	return &info, nil
+	return info, nil
 }
 
 func (prof *UserProfile) IsBots() bool {
