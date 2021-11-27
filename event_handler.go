@@ -53,7 +53,7 @@ func messageEventHandler(ctx context.Context, api *slack.Client, client *socketm
 	case slack.MsgSubTypeFileShare, slack.MsgSubTypeChannelTopic, slack.MsgSubTypeChannelPurpose, "":
 		// continue
 	default:
-		fmt.Printf("ignore subtype:%s", ev.SubType)
+		fmt.Printf("ignore subtype:%s\n", ev.SubType)
 		return nil
 	}
 

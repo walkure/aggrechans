@@ -69,7 +69,7 @@ func main() {
 		defer wg.Done()
 		chinfo, err = common.InitChanInfo(ctx, api)
 		if err != nil {
-			fmt.Printf("cannot init channel info:%v", err)
+			fmt.Printf("cannot init channel info:%v\n", err)
 			os.Exit(-1)
 		}
 	}()
@@ -79,7 +79,7 @@ func main() {
 		defer wg.Done()
 		uinfo, err = common.InitUserInfo(ctx, api)
 		if err != nil {
-			fmt.Printf("cannot init channel info:%v", err)
+			fmt.Printf("cannot init user info:%v\n", err)
 			os.Exit(-1)
 		}
 	}()
