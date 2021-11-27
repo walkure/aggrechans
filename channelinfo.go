@@ -89,20 +89,29 @@ func (info *ChannelInfo) GetMessageLink(ctx context.Context, ev *slackevents.Mes
 		return "", fmt.Errorf("cannot convert channel id:%w", err)
 	}
 
-	return fmt.Sprintf("<%s|`#%s`>", info.GetMessageUri(ev), name), nil
+	if isMessageUri(ev) {
+		return fmt.Sprintf("<%s|`#%s`>", info.getMessageUri(ev), name), nil
+	} else {
+		return fmt.Sprintf("<%s|`%%%s`>", info.getMessageUri(ev), name), nil
+	}
+
 }
 
-func (info *ChannelInfo) GetMessageUri(ev *slackevents.MessageEvent) string {
+func isMessageUri(ev *slackevents.MessageEvent) bool {
+	return ev.ThreadTimeStamp == "" || ev.SubType == slack.MsgSubTypeThreadBroadcast
+}
+
+func (info *ChannelInfo) getMessageUri(ev *slackevents.MessageEvent) string {
 	// cannot follow links at smartphone app. whils exists "." in  message id.
 	mid := strings.Replace(ev.TimeStamp, ".", "", -1)
 
 	uri := fmt.Sprintf("https://%s.slack.com/archives/%s/p%s", info.domain, ev.Channel, mid)
 
-	if ev.ThreadTimeStamp == "" || ev.SubType == slack.MsgSubTypeThreadBroadcast {
+	if isMessageUri(ev) {
 		return uri
+	} else {
+		return fmt.Sprintf("%s?thread_ts=%s&cid=%s", uri, ev.ThreadTimeStamp, ev.Channel)
 	}
-
-	return fmt.Sprintf("%s?thread_ts=%s&cid=%s", uri, ev.ThreadTimeStamp, ev.Channel)
 }
 
 func (info *ChannelInfo) GetName(ctx context.Context, cid string) (string, error) {
