@@ -72,9 +72,10 @@ func EscapeChannelCall(orig string) string {
 			}
 			sbbs := sbb.String()
 			fmt.Println(sbbs)
-			if strings.HasPrefix(sbbs, "!subteam^") && len(sbbs) > 22 {
+			if strings.HasPrefix(sbbs, "!subteam^") {
 				sb.WriteRune('＠')
-				i += 21
+				sep := strings.Index(sbbs, "|")
+				i += (sep + 1)
 			} else if sbbs == "!channel" {
 				sb.WriteString("@channel")
 				i += 7
