@@ -22,10 +22,13 @@ Slackの全Public channelにおける人間の発言を一つのチャンネル�
 #### User scope
 
 - `channels:history` イベントを受信
+- eventsをuser eventsにした場合
+  - `channels:read` - チャンネル状態の変化イベント
+  - `users:read` - ユーザ情報の変更イベント
 
 ### Subscribe events
 
-#### bot events
+#### bot(or user) events
 
 - `channel_rename` - チャンネルのリネーム
 - `channel_created` - チャンネルの作成
