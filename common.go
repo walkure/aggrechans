@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -71,7 +70,7 @@ func EscapeChannelCall(orig string) string {
 				continue
 			}
 			sbbs := sbb.String()
-			fmt.Println(sbbs)
+
 			if strings.HasPrefix(sbbs, "!subteam^") {
 				sb.WriteRune('＠')
 				sep := strings.Index(sbbs, "|")
