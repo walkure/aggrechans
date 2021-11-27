@@ -54,7 +54,12 @@ func (info *UserInfo) GetUserProfile(ctx context.Context, uid string) (*UserProf
 	}
 
 	if strings.HasPrefix(uid, "B") {
-		return nil, fmt.Errorf("uid=%s is bot", uid)
+		bot, err := info.api.GetBotInfoContext(ctx, uid)
+		if err != nil {
+			return nil, fmt.Errorf("err at bot.info(uid=%s):%w", uid, err)
+		}
+		info.setBotInfo(bot)
+		return info.name[uid], nil
 	}
 
 	user, err := info.api.GetUserInfoContext(ctx, uid)
@@ -76,6 +81,15 @@ func (info *UserInfo) setUserInfo(user *slack.User) {
 		Avatar: user.Profile.Image72,
 		bot:    user.IsBot || user.ID == "USLACKBOT",
 		app:    user.IsAppUser,
+	}
+}
+
+func (info *UserInfo) setBotInfo(bot *slack.Bot) {
+	info.name[bot.ID] = &UserProfile{
+		Name:   bot.Name,
+		Avatar: bot.Icons.Image72,
+		bot:    true,
+		app:    true,
 	}
 }
 
