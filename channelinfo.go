@@ -95,7 +95,14 @@ func (info *ChannelInfo) GetMessageLink(ctx context.Context, ev *slackevents.Mes
 func (info *ChannelInfo) GetMessageUri(ev *slackevents.MessageEvent) string {
 	// cannot follow links at smartphone app. whils exists "." in  message id.
 	mid := strings.Replace(ev.TimeStamp, ".", "", -1)
-	return fmt.Sprintf("https://%s.slack.com/archives/%s/p%s", info.domain, ev.Channel, mid)
+
+	uri := fmt.Sprintf("https://%s.slack.com/archives/%s/p%s", info.domain, ev.Channel, mid)
+
+	if ev.ThreadTimeStamp == "" || ev.SubType == slack.MsgSubTypeThreadBroadcast {
+		return uri
+	}
+
+	return fmt.Sprintf("%s?thread_ts=%s&cid=%s", uri, ev.ThreadTimeStamp, ev.Channel)
 }
 
 func (info *ChannelInfo) GetName(ctx context.Context, cid string) (string, error) {

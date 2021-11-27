@@ -50,7 +50,7 @@ func messageEventHandler(ctx context.Context, api *slack.Client, client *socketm
 				uid = ev.Message.Edited.User
 			}
 		}
-	case slack.MsgSubTypeFileShare, slack.MsgSubTypeChannelTopic, slack.MsgSubTypeChannelPurpose, "":
+	case slack.MsgSubTypeFileShare, slack.MsgSubTypeChannelTopic, slack.MsgSubTypeChannelPurpose, slack.MsgSubTypeThreadBroadcast, "":
 		// continue
 	default:
 		fmt.Printf("ignore subtype:%s\n", ev.SubType)
