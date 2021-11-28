@@ -106,10 +106,12 @@ func main() {
 				client.Ack(*evt.Request)
 				switch eventsAPIEvent.Type {
 				case slackevents.CallbackEvent:
-					err := common.CallbackEventHandler(context.TODO(), api, client, eventsAPIEvent, chinfo, uinfo, AGG_CHAN_ID, nil)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error!:%+v\n", err)
-					}
+					go func() {
+						err := common.CallbackEventHandler(context.TODO(), api, client, eventsAPIEvent, chinfo, uinfo, AGG_CHAN_ID, nil)
+						if err != nil {
+							fmt.Fprintf(os.Stderr, "Error!:%+v\n", err)
+						}
+					}()
 				default:
 					fmt.Printf("unsupported Events API event received: %s\n", eventsAPIEvent.Type)
 				}

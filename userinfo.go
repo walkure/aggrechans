@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/slack-go/slack"
 )
@@ -11,6 +12,7 @@ import (
 type UserInfo struct {
 	name map[string]*UserProfile
 	api  *slack.Client
+	mu   sync.Mutex
 }
 
 type UserProfile struct {
@@ -49,7 +51,7 @@ func (prof *UserProfile) IsBots() bool {
 }
 
 func (info *UserInfo) GetUserProfile(ctx context.Context, uid string) (*UserProfile, error) {
-	if prof, ok := info.name[uid]; ok {
+	if prof, ok := info.lookupUserInfo(uid); ok {
 		return prof, nil
 	}
 
@@ -58,39 +60,60 @@ func (info *UserInfo) GetUserProfile(ctx context.Context, uid string) (*UserProf
 		if err != nil {
 			return nil, fmt.Errorf("err at bot.info(uid=%s):%w", uid, err)
 		}
-		info.setBotInfo(bot)
-		return info.name[uid], nil
+
+		return info.setBotInfo(bot), nil
 	}
 
 	user, err := info.api.GetUserInfoContext(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("err at users.info(uid=%s):%w", uid, err)
 	}
-	info.setUserInfo(user)
 
-	return info.name[uid], nil
+	return info.setUserInfo(user), nil
 }
 
 func (info *UserInfo) HandleUserChangeEvent(ev *slack.UserChangeEvent) {
 	info.setUserInfo(&ev.User)
 }
 
-func (info *UserInfo) setUserInfo(user *slack.User) {
-	info.name[user.ID] = &UserProfile{
+func (info *UserInfo) lookupUserInfo(uid string) (*UserProfile, bool) {
+	info.mu.Lock()
+	defer info.mu.Unlock()
+
+	prof, ok := info.name[uid]
+	return prof, ok
+}
+
+func (info *UserInfo) setUserInfo(user *slack.User) *UserProfile {
+	prof := &UserProfile{
 		Name:   user.Name,
 		Avatar: user.Profile.Image72,
 		bot:    user.IsBot || user.ID == "USLACKBOT",
 		app:    user.IsAppUser,
 	}
+
+	info.mu.Lock()
+	defer info.mu.Unlock()
+
+	info.name[user.ID] = prof
+
+	return prof
 }
 
-func (info *UserInfo) setBotInfo(bot *slack.Bot) {
-	info.name[bot.ID] = &UserProfile{
+func (info *UserInfo) setBotInfo(bot *slack.Bot) *UserProfile {
+	prof := &UserProfile{
 		Name:   bot.Name,
 		Avatar: bot.Icons.Image72,
 		bot:    true,
 		app:    true,
 	}
+
+	info.mu.Lock()
+	defer info.mu.Unlock()
+
+	info.name[bot.ID] = prof
+
+	return prof
 }
 
 func (info *UserInfo) ReplaceMentionUIDs(ctx context.Context, orig string) (string, error) {

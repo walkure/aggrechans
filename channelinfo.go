@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/slack-go/slack"
@@ -15,6 +16,7 @@ type ChannelInfo struct {
 	name   map[string]string
 	domain string
 	api    *slack.Client
+	mu     sync.Mutex
 }
 
 func CreateChanInfo(ctx context.Context, api *slack.Client) (*ChannelInfo, error) {
@@ -116,7 +118,7 @@ func (info *ChannelInfo) getMessageUri(ev *slackevents.MessageEvent) string {
 
 func (info *ChannelInfo) GetName(ctx context.Context, cid string) (string, error) {
 
-	if name, ok := info.name[cid]; ok {
+	if name, ok := info.lookupName(cid); ok {
 		return name, nil
 	}
 
@@ -125,21 +127,35 @@ func (info *ChannelInfo) GetName(ctx context.Context, cid string) (string, error
 		return "", fmt.Errorf("err at conversations.info(cid=%s):%w", cid, err)
 	}
 
-	info.name[cid] = cinfo.Name
+	return info.setName(cid, cinfo.Name), nil
+}
 
-	return info.name[cid], nil
+func (info *ChannelInfo) lookupName(cid string) (string, bool) {
+	info.mu.Lock()
+	defer info.mu.Unlock()
+
+	name, ok := info.name[cid]
+	return name, ok
+}
+
+func (info *ChannelInfo) setName(cid, cname string) string {
+	info.mu.Lock()
+	defer info.mu.Unlock()
+
+	info.name[cid] = cname
+	return cname
 }
 
 func (info *ChannelInfo) UpdateName(chinfo slackevents.ChannelRenameInfo) {
-	old, ok := info.name[chinfo.ID]
+	old, ok := info.lookupName(chinfo.ID)
 	if ok {
 		fmt.Printf("rename channel(%s) %s -> %s\n", chinfo.ID, old, chinfo.Name)
 	} else {
 		fmt.Printf("rename channel(%s) ??? -> %s\n", chinfo.ID, chinfo.Name)
 	}
-	info.name[chinfo.ID] = chinfo.Name
+	info.setName(chinfo.ID, chinfo.Name)
 }
 
 func (info *ChannelInfo) HandleCreateEvent(chinfo slackevents.ChannelCreatedInfo) {
-	info.name[chinfo.ID] = chinfo.Name
+	info.setName(chinfo.ID, chinfo.Name)
 }
