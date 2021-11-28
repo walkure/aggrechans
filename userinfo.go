@@ -2,43 +2,48 @@ package common
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/slack-go/slack"
 )
 
 type UserInfo struct {
-	name map[string]*UserProfile
-	api  *slack.Client
-	mu   sync.Mutex
+	name  map[string]*UserProfile
+	api   *slack.Client
+	mu    sync.Mutex
+	redis *redis.Client
 }
 
 type UserProfile struct {
-	Name   string
-	Avatar string
-	bot    bool
-	app    bool
+	Name   string `json:"name"`
+	Avatar string `json:"avatar"`
+	Bot    bool   `json:"bot"`
+	App    bool   `json:"app"`
 }
 
-func CreateUserInfo(api *slack.Client) *UserInfo {
+func CreateUserInfo(api *slack.Client, redis *redis.Client) *UserInfo {
 	info := UserInfo{}
 	info.name = make(map[string]*UserProfile)
 	info.api = api
+	info.redis = redis
 
 	return &info
 }
 
 func InitUserInfo(ctx context.Context, api *slack.Client) (*UserInfo, error) {
-	info := CreateUserInfo(api)
+	info := CreateUserInfo(api, nil)
 
 	users, err := api.GetUsersContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("err at users.list:%w", err)
 	}
 	for _, user := range users {
-		info.setUserInfo(&user)
+		info.setUserInfo(ctx, &user)
 	}
 	//api.Debugf("loaded %d users\n", len(info.name))
 	fmt.Printf("loaded %d users\n", len(info.name))
@@ -47,11 +52,11 @@ func InitUserInfo(ctx context.Context, api *slack.Client) (*UserInfo, error) {
 }
 
 func (prof *UserProfile) IsBots() bool {
-	return prof.bot || prof.app
+	return prof.Bot || prof.App
 }
 
 func (info *UserInfo) GetUserProfile(ctx context.Context, uid string) (*UserProfile, error) {
-	if prof, ok := info.lookupUserInfo(uid); ok {
+	if prof, ok := info.lookupUserInfo(ctx, uid); ok {
 		return prof, nil
 	}
 
@@ -61,7 +66,7 @@ func (info *UserInfo) GetUserProfile(ctx context.Context, uid string) (*UserProf
 			return nil, fmt.Errorf("err at bot.info(uid=%s):%w", uid, err)
 		}
 
-		return info.setBotInfo(bot), nil
+		return info.setBotInfo(ctx, bot), nil
 	}
 
 	user, err := info.api.GetUserInfoContext(ctx, uid)
@@ -69,49 +74,98 @@ func (info *UserInfo) GetUserProfile(ctx context.Context, uid string) (*UserProf
 		return nil, fmt.Errorf("err at users.info(uid=%s):%w", uid, err)
 	}
 
-	return info.setUserInfo(user), nil
+	return info.setUserInfo(ctx, user), nil
 }
 
-func (info *UserInfo) HandleUserChangeEvent(ev *slack.UserChangeEvent) {
-	info.setUserInfo(&ev.User)
+func (info *UserInfo) HandleUserChangeEvent(ctx context.Context, ev *slack.UserChangeEvent) {
+	info.setUserInfo(ctx, &ev.User)
 }
 
-func (info *UserInfo) lookupUserInfo(uid string) (*UserProfile, bool) {
-	info.mu.Lock()
-	defer info.mu.Unlock()
+func (info *UserInfo) lookupUserInfo(ctx context.Context, uid string) (*UserProfile, bool) {
+	var prof *UserProfile
+	ok := false
 
-	prof, ok := info.name[uid]
-	return prof, ok
+	func() {
+		info.mu.Lock()
+		defer info.mu.Unlock()
+		prof, ok = info.name[uid]
+	}()
+
+	if ok || info.redis == nil {
+		return prof, ok
+	}
+
+	result, err := info.redis.Get(ctx, uid).Result()
+	if err != nil {
+		return nil, false
+	}
+
+	prof = &UserProfile{}
+
+	if err := json.Unmarshal([]byte(result), prof); err != nil {
+		fmt.Fprintf(os.Stderr, "unmarshal error:%v\n", err)
+		return nil, false
+	}
+
+	func() {
+		info.mu.Lock()
+		defer info.mu.Unlock()
+		info.name[uid] = prof
+	}()
+
+	return prof, true
 }
 
-func (info *UserInfo) setUserInfo(user *slack.User) *UserProfile {
+func (up UserProfile) MarshalBinary() ([]byte, error) {
+	return json.Marshal(up)
+}
+
+func (info *UserInfo) setUserInfo(ctx context.Context, user *slack.User) *UserProfile {
 	prof := &UserProfile{
 		Name:   user.Name,
 		Avatar: user.Profile.Image72,
-		bot:    user.IsBot || user.ID == "USLACKBOT",
-		app:    user.IsAppUser,
+		Bot:    user.IsBot || user.ID == "USLACKBOT",
+		App:    user.IsAppUser,
 	}
 
-	info.mu.Lock()
-	defer info.mu.Unlock()
+	func() {
+		info.mu.Lock()
+		defer info.mu.Unlock()
+		info.name[user.ID] = prof
+	}()
 
-	info.name[user.ID] = prof
+	if info.redis != nil {
+		// discard error
+		err := info.redis.Set(ctx, user.ID, prof, 0).Err()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Redis Set Error:%v\n", err)
+		}
+	}
 
 	return prof
 }
 
-func (info *UserInfo) setBotInfo(bot *slack.Bot) *UserProfile {
+func (info *UserInfo) setBotInfo(ctx context.Context, bot *slack.Bot) *UserProfile {
 	prof := &UserProfile{
 		Name:   bot.Name,
 		Avatar: bot.Icons.Image72,
-		bot:    true,
-		app:    true,
+		Bot:    true,
+		App:    true,
 	}
 
-	info.mu.Lock()
-	defer info.mu.Unlock()
+	func() {
+		info.mu.Lock()
+		defer info.mu.Unlock()
+		info.name[bot.ID] = prof
+	}()
 
-	info.name[bot.ID] = prof
+	if info.redis != nil {
+		// discard error
+		err := info.redis.Set(ctx, bot.ID, prof, 0).Err()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Redis Set Error:%v\n", err)
+		}
+	}
 
 	return prof
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
@@ -60,31 +61,42 @@ func main() {
 	}
 
 	ctx := context.Background()
-	wg := &sync.WaitGroup{}
 	chinfo := &common.ChannelInfo{}
 	uinfo := &common.UserInfo{}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		chinfo, err = common.InitChanInfo(ctx, api)
-		if err != nil {
-			fmt.Printf("cannot init channel info:%v\n", err)
-			os.Exit(-1)
-		}
-	}()
+	redis_host := os.Getenv("REDIS_HOST")
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		uinfo, err = common.InitUserInfo(ctx, api)
-		if err != nil {
-			fmt.Printf("cannot init user info:%v\n", err)
-			os.Exit(-1)
-		}
-	}()
+	if redis_host == "" {
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			chinfo, err = common.InitChanInfo(ctx, api)
+			if err != nil {
+				fmt.Printf("cannot init channel info:%v\n", err)
+				os.Exit(-1)
+			}
+		}()
 
-	wg.Wait()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			uinfo, err = common.InitUserInfo(ctx, api)
+			if err != nil {
+				fmt.Printf("cannot init user info:%v\n", err)
+				os.Exit(-1)
+			}
+		}()
+		wg.Wait()
+	} else {
+		redis := redis.NewClient(&redis.Options{
+			Addr:     redis_host,
+			Password: "", // no password set
+			DB:       0,  // use default DB
+		})
+		uinfo = common.CreateUserInfo(api, redis)
+		chinfo, _ = common.CreateChanInfo(context.TODO(), api, redis)
+	}
 
 	go func() {
 		for evt := range client.Events {

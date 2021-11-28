@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 )
@@ -17,12 +19,14 @@ type ChannelInfo struct {
 	domain string
 	api    *slack.Client
 	mu     sync.Mutex
+	redis  *redis.Client
 }
 
-func CreateChanInfo(ctx context.Context, api *slack.Client) (*ChannelInfo, error) {
+func CreateChanInfo(ctx context.Context, api *slack.Client, redis *redis.Client) (*ChannelInfo, error) {
 	info := ChannelInfo{}
 	info.name = make(map[string]string)
 	info.api = api
+	info.redis = redis
 
 	tinfo, err := api.GetTeamInfoContext(ctx)
 	if err != nil {
@@ -35,7 +39,7 @@ func CreateChanInfo(ctx context.Context, api *slack.Client) (*ChannelInfo, error
 }
 
 func InitChanInfo(ctx context.Context, api *slack.Client) (*ChannelInfo, error) {
-	info, err := CreateChanInfo(ctx, api)
+	info, err := CreateChanInfo(ctx, api, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +122,7 @@ func (info *ChannelInfo) getMessageUri(ev *slackevents.MessageEvent) string {
 
 func (info *ChannelInfo) GetName(ctx context.Context, cid string) (string, error) {
 
-	if name, ok := info.lookupName(cid); ok {
+	if name, ok := info.lookupName(ctx, cid); ok {
 		return name, nil
 	}
 
@@ -127,35 +131,65 @@ func (info *ChannelInfo) GetName(ctx context.Context, cid string) (string, error
 		return "", fmt.Errorf("err at conversations.info(cid=%s):%w", cid, err)
 	}
 
-	return info.setName(cid, cinfo.Name), nil
+	return info.setName(ctx, cid, cinfo.Name), nil
 }
 
-func (info *ChannelInfo) lookupName(cid string) (string, bool) {
-	info.mu.Lock()
-	defer info.mu.Unlock()
+func (info *ChannelInfo) lookupName(ctx context.Context, cid string) (string, bool) {
+	name := ""
+	ok := false
+	func() {
+		info.mu.Lock()
+		defer info.mu.Unlock()
+		name, ok = info.name[cid]
+	}()
 
-	name, ok := info.name[cid]
-	return name, ok
+	if ok || info.redis == nil {
+		return name, ok
+	}
+
+	name, err := info.redis.Get(ctx, cid).Result()
+	if err != nil {
+		return "", false
+	}
+
+	func() {
+		info.mu.Lock()
+		defer info.mu.Unlock()
+		info.name[cid] = name
+	}()
+
+	return name, true
+
 }
 
-func (info *ChannelInfo) setName(cid, cname string) string {
-	info.mu.Lock()
-	defer info.mu.Unlock()
+func (info *ChannelInfo) setName(ctx context.Context, cid, cname string) string {
+	func() {
+		info.mu.Lock()
+		defer info.mu.Unlock()
+		info.name[cid] = cname
+	}()
 
-	info.name[cid] = cname
+	if info.redis != nil {
+		err := info.redis.Set(ctx, cid, cname, 0).Err()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Redis Set Error:%v\n", err)
+		}
+
+	}
+
 	return cname
 }
 
-func (info *ChannelInfo) UpdateName(chinfo slackevents.ChannelRenameInfo) {
-	old, ok := info.lookupName(chinfo.ID)
+func (info *ChannelInfo) UpdateName(ctx context.Context, chinfo slackevents.ChannelRenameInfo) {
+	old, ok := info.lookupName(ctx, chinfo.ID)
 	if ok {
 		fmt.Printf("rename channel(%s) %s -> %s\n", chinfo.ID, old, chinfo.Name)
 	} else {
 		fmt.Printf("rename channel(%s) ??? -> %s\n", chinfo.ID, chinfo.Name)
 	}
-	info.setName(chinfo.ID, chinfo.Name)
+	info.setName(ctx, chinfo.ID, chinfo.Name)
 }
 
-func (info *ChannelInfo) HandleCreateEvent(chinfo slackevents.ChannelCreatedInfo) {
-	info.setName(chinfo.ID, chinfo.Name)
+func (info *ChannelInfo) HandleCreateEvent(ctx context.Context, chinfo slackevents.ChannelCreatedInfo) {
+	info.setName(ctx, chinfo.ID, chinfo.Name)
 }

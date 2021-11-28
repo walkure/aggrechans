@@ -18,11 +18,11 @@ func CallbackEventHandler(ctx context.Context, api *slack.Client, client *socket
 	case *slackevents.MessageEvent:
 		return messageEventHandler(ctx, api, client, ev, ci, ui, dstChannel, excludeChFn)
 	case *slackevents.ChannelRenameEvent:
-		ci.UpdateName(ev.Channel)
+		ci.UpdateName(ctx, ev.Channel)
 	case *slack.UserChangeEvent:
-		ui.HandleUserChangeEvent(ev)
+		ui.HandleUserChangeEvent(ctx, ev)
 	case *slackevents.ChannelCreatedEvent:
-		ci.HandleCreateEvent(ev.Channel)
+		ci.HandleCreateEvent(ctx, ev.Channel)
 	case *slackevents.ChannelUnarchiveEvent:
 		name, err := ci.GetName(ctx, ev.Channel)
 		if err != nil {
