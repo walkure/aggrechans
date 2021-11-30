@@ -16,8 +16,6 @@ import (
 	common "github.com/walkure/aggrechans"
 )
 
-var AGG_CHAN_ID = os.Getenv("AGGREGATE_CHANNEL_ID")
-
 func createSlackSocketClient() (*slack.Client, *socketmode.Client, error) {
 	appToken := os.Getenv("SLACK_APP_TOKEN")
 	if appToken == "" {
@@ -59,6 +57,8 @@ func main() {
 		fmt.Printf("cannot establish connectins:%v", err)
 		os.Exit(-1)
 	}
+
+	aggChanId := os.Getenv("AGGREGATE_CHANNEL_ID")
 
 	ctx := context.Background()
 	chinfo := &common.ChannelInfo{}
@@ -119,7 +119,8 @@ func main() {
 				switch eventsAPIEvent.Type {
 				case slackevents.CallbackEvent:
 					go func() {
-						err := common.CallbackEventHandler(context.TODO(), api, eventsAPIEvent, chinfo, uinfo, AGG_CHAN_ID, nil)
+						err := common.CallbackEventHandler(context.TODO(), api, eventsAPIEvent, chinfo, uinfo,
+							func(chName string) string { return aggChanId })
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error!:%+v\n", err)
 						}

@@ -8,14 +8,14 @@ import (
 	"github.com/slack-go/slack/slackevents"
 )
 
-type ExcludeChannelFunc func(chanName string) bool
+type DestinationChannelFunc func(chanName string) string
 
 func CallbackEventHandler(ctx context.Context, api *slack.Client, eventsAPIEvent slackevents.EventsAPIEvent,
-	ci *ChannelInfo, ui *UserInfo, dstChannel string, excludeChFn ExcludeChannelFunc) error {
+	ci *ChannelInfo, ui *UserInfo, destChFn DestinationChannelFunc) error {
 	innerEvent := eventsAPIEvent.InnerEvent
 	switch ev := innerEvent.Data.(type) {
 	case *slackevents.MessageEvent:
-		return messageEventHandler(ctx, api, ev, ci, ui, dstChannel, excludeChFn)
+		return messageEventHandler(ctx, api, ev, ci, ui, destChFn)
 	case *slackevents.ChannelRenameEvent:
 		ci.UpdateName(ctx, ev.Channel)
 	case *slack.UserChangeEvent:
@@ -35,7 +35,7 @@ func CallbackEventHandler(ctx context.Context, api *slack.Client, eventsAPIEvent
 }
 
 func messageEventHandler(ctx context.Context, api *slack.Client, ev *slackevents.MessageEvent,
-	ci *ChannelInfo, ui *UserInfo, dstChannel string, excludeChFn ExcludeChannelFunc) error {
+	ci *ChannelInfo, ui *UserInfo, destChFn DestinationChannelFunc) error {
 
 	text := ev.Text
 	uid := ev.User
@@ -69,15 +69,14 @@ func messageEventHandler(ctx context.Context, api *slack.Client, ev *slackevents
 		return nil
 	}
 
-	if excludeChFn != nil {
-		chanName, err := ci.GetName(ctx, ev.Channel)
-		if err != nil {
-			return fmt.Errorf("cannot resolve cnannel name(lookup):%w", err)
-		}
+	chanName, err := ci.GetName(ctx, ev.Channel)
+	if err != nil {
+		return fmt.Errorf("cannot resolve cnannel name(lookup):%w", err)
+	}
 
-		if excludeChFn(chanName) {
-			return nil
-		}
+	dstChannel := destChFn(chanName)
+	if dstChannel == "" {
+		return nil
 	}
 
 	msgLink, err := ci.GetMessageLink(ctx, ev)
