@@ -2,9 +2,11 @@ package common
 
 import (
 	"context"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/slack-go/slack"
 )
 
@@ -97,4 +99,39 @@ func EscapeChannelCall(orig string) string {
 		}
 	}
 	return sb.String()
+}
+
+func LoadRedisConfig() *redis.Options {
+
+	loadRedisUrl := func(redisUrl string) *redis.Options {
+		if redisUrl == "" {
+			return nil
+		}
+		opt, err := redis.ParseURL(redisUrl)
+		if err == nil && opt != nil {
+			return opt
+		}
+		return nil
+	}
+
+	opt := loadRedisUrl(os.Getenv("REDIS_TLS_URL"))
+	if opt != nil {
+		return opt
+	}
+
+	opt = loadRedisUrl(os.Getenv("REDIS_URL"))
+	if opt != nil {
+		return opt
+	}
+
+	redis_host := os.Getenv("REDIS_HOST")
+	if redis_host == "" {
+		return nil
+	}
+
+	return &redis.Options{
+		Addr:     redis_host,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	}
 }

@@ -64,9 +64,9 @@ func main() {
 	chinfo := &common.ChannelInfo{}
 	uinfo := &common.UserInfo{}
 
-	redis_host := os.Getenv("REDIS_HOST")
+	redis_opt := common.LoadRedisConfig()
 
-	if redis_host == "" {
+	if redis_opt == nil {
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
 		go func() {
@@ -89,11 +89,7 @@ func main() {
 		}()
 		wg.Wait()
 	} else {
-		redis := redis.NewClient(&redis.Options{
-			Addr:     redis_host,
-			Password: "", // no password set
-			DB:       0,  // use default DB
-		})
+		redis := redis.NewClient(redis_opt)
 		uinfo = common.CreateUserInfo(api, redis)
 		chinfo, _ = common.CreateChanInfo(context.TODO(), api, redis)
 	}
