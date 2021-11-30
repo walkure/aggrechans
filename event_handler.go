@@ -6,17 +6,16 @@ import (
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
-	"github.com/slack-go/slack/socketmode"
 )
 
 type ExcludeChannelFunc func(chanName string) bool
 
-func CallbackEventHandler(ctx context.Context, api *slack.Client, client *socketmode.Client, eventsAPIEvent slackevents.EventsAPIEvent,
+func CallbackEventHandler(ctx context.Context, api *slack.Client, eventsAPIEvent slackevents.EventsAPIEvent,
 	ci *ChannelInfo, ui *UserInfo, dstChannel string, excludeChFn ExcludeChannelFunc) error {
 	innerEvent := eventsAPIEvent.InnerEvent
 	switch ev := innerEvent.Data.(type) {
 	case *slackevents.MessageEvent:
-		return messageEventHandler(ctx, api, client, ev, ci, ui, dstChannel, excludeChFn)
+		return messageEventHandler(ctx, api, ev, ci, ui, dstChannel, excludeChFn)
 	case *slackevents.ChannelRenameEvent:
 		ci.UpdateName(ctx, ev.Channel)
 	case *slack.UserChangeEvent:
@@ -35,7 +34,7 @@ func CallbackEventHandler(ctx context.Context, api *slack.Client, client *socket
 	return nil
 }
 
-func messageEventHandler(ctx context.Context, api *slack.Client, client *socketmode.Client, ev *slackevents.MessageEvent,
+func messageEventHandler(ctx context.Context, api *slack.Client, ev *slackevents.MessageEvent,
 	ci *ChannelInfo, ui *UserInfo, dstChannel string, excludeChFn ExcludeChannelFunc) error {
 
 	text := ev.Text

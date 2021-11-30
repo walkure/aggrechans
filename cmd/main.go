@@ -119,7 +119,7 @@ func main() {
 				switch eventsAPIEvent.Type {
 				case slackevents.CallbackEvent:
 					go func() {
-						err := common.CallbackEventHandler(context.TODO(), api, client, eventsAPIEvent, chinfo, uinfo, AGG_CHAN_ID, nil)
+						err := common.CallbackEventHandler(context.TODO(), api, eventsAPIEvent, chinfo, uinfo, AGG_CHAN_ID, nil)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error!:%+v\n", err)
 						}
