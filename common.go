@@ -116,6 +116,8 @@ func LoadRedisConfig() *redis.Options {
 
 	opt := loadRedisUrl(os.Getenv("REDIS_TLS_URL"))
 	if opt != nil {
+		// heroku-redis x509 says *.service.shogun.heroku.com but REDIS_TLS_URL is ec2-*.compute-1.amazonaws.com
+		opt.TLSConfig.InsecureSkipVerify = true
 		return opt
 	}
 
