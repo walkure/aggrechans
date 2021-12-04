@@ -87,7 +87,7 @@ func main() {
 			w.Write([]byte(r.Challenge))
 		case slackevents.CallbackEvent:
 			go func() {
-				err := common.CallbackEventHandler(r.Context(), api, eventsAPIEvent, chinfo, uinfo, dispatcher.Dispatch)
+				err := common.CallbackEventHandler(context.Background(), api, eventsAPIEvent, chinfo, uinfo, dispatcher.Dispatch)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error!:%+v\n", err)
 				}
