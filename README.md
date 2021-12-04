@@ -64,6 +64,12 @@ Slackの全Public channelにおける人間の発言を一つのチャンネル�
 }]
 ```
 
+## Heroku 
+
+WebhookでEvent API受け取る場合はHerokuでも動きます。
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
 ## Author
 
 walkure at 3pf.jp
