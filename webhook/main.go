@@ -57,6 +57,13 @@ func main() {
 	uinfo := common.CreateUserInfo(api, redis)
 	chinfo, _ := common.CreateChanInfo(ctx, api, redis)
 
+	dispatcher, err := common.NewDispatcher()
+	if err != nil {
+		fmt.Printf("cannot load dispatch info:%v", err)
+		os.Exit(-1)
+	}
+	fmt.Println(dispatcher.Rules())
+
 	http.HandleFunc("/events-endpoint", func(w http.ResponseWriter, r *http.Request) {
 		body, err := loadRequest(w, r, signingSecret)
 		if err != nil {
@@ -79,7 +86,7 @@ func main() {
 			w.Header().Set("Content-Type", "text")
 			w.Write([]byte(r.Challenge))
 		case slackevents.CallbackEvent:
-			err := common.CallbackEventHandler(r.Context(), api, eventsAPIEvent, chinfo, uinfo, dispatchChannel)
+			err := common.CallbackEventHandler(r.Context(), api, eventsAPIEvent, chinfo, uinfo, dispatcher.Dispatch)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error!:%+v\n", err)
 			}
@@ -108,15 +115,6 @@ func main() {
 
 	fmt.Printf("[INFO] Server listening at %s\n", port)
 	fmt.Fprintf(os.Stderr, "[FATAL] server shutdown. %+v\n", serv.ListenAndServe())
-}
-
-func dispatchChannel(chanName string) string {
-	/*
-		if strings.HasPrefix(chanName, "times_") {
-			return AGG_CHAN_ID
-		}
-	*/
-	return AGG_CHAN_ID
 }
 
 func loadRequest(w http.ResponseWriter, r *http.Request, signingSecret string) (json.RawMessage, error) {

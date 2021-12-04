@@ -1,6 +1,6 @@
 # aggrechans
 
-Slackの全Public channelにおける人間の発言を一つのチャンネルに集約して流します。
+Slackの全Public channelにおける人間の発言を一つのチャンネルに集約して流したりします。
 
 ## Appの権限設定
 
@@ -38,6 +38,31 @@ Slackの全Public channelにおける人間の発言を一つのチャンネル�
 #### user events
 
 - `message.channels` public channelに流れるメッセージ
+
+## Message dispatch rules
+
+### 全メッセージを一箇所に集約
+
+環境変数 `AGGREGATE_CHANNEL_ID` にチャンネルIDを指定して起動すると、受信した人間による全発言を投入します。
+
+巨大Workspaceなどでは[chat.postMessage](https://api.slack.com/methods/chat.postMessage)の[API rate limit](https://api.slack.com/docs/rate-limits#tier_t5)を突き抜けるかもしれません。
+
+### チャンネル名で集約先を分ける
+
+環境変数`DISPATCH_CHANNEL`にJSON形式で集約ルールを書くことが出来ます。`prefix`と`suffix`の2つがあり、`prefix`を先に評価します。
+
+```json
+[{
+  "prefix": "times_",
+  "cid": "CIDTIMES"
+},{
+  "suffix": "_zatsu",
+  "cid": "CIDZATSU"
+},{
+  "suffix": "_foobar",
+  "cid": "CIDFOOBAR"
+}]
+```
 
 ## Author
 

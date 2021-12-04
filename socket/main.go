@@ -58,7 +58,12 @@ func main() {
 		os.Exit(-1)
 	}
 
-	aggChanId := os.Getenv("AGGREGATE_CHANNEL_ID")
+	dispatcher, err := common.NewDispatcher()
+	if err != nil {
+		fmt.Printf("cannot load dispatch info:%v", err)
+		os.Exit(-1)
+	}
+	fmt.Println(dispatcher.Rules())
 
 	ctx := context.Background()
 	chinfo := &common.ChannelInfo{}
@@ -116,7 +121,7 @@ func main() {
 				case slackevents.CallbackEvent:
 					go func() {
 						err := common.CallbackEventHandler(context.TODO(), api, eventsAPIEvent, chinfo, uinfo,
-							func(chName string) string { return aggChanId })
+							dispatcher.Dispatch)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error!:%+v\n", err)
 						}
