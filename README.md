@@ -64,7 +64,16 @@ Slackの全Public channelにおける人間の発言を一つのチャンネル�
 }]
 ```
 
-## Heroku 
+## Redis cache
+
+Slackが送ってくるイベントではチャンネルとユーザ名が内部UIDで表記されているため、適当にlookupする必要があります。
+オンメモリでキャッシュしていますが、なんかの弾みでプロセスが再起動される毎にAPI叩くのを避けるためにRedisに保存することができます。
+
+`REDIS_TLS_URL`(TLSでの接続URL)、`REDIS_URL`(生TCPでの接続URL)、`REDIS_HOST`(host:port形式)のどれか環境変数で設定すると、Redisをオンメモリキャッシュの裏として使うようになります。
+
+現状Redisに書き込むkeyは特にTTLを設定していないので、適当に`allkeys-lru`などのeviction policyを設定してください。
+
+## Heroku
 
 WebhookでEvent API受け取る場合はHerokuでも動きます。
 
