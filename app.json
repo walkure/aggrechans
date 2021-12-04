@@ -7,19 +7,17 @@
 	"website": "https://github.com/walkure/aggrechans",
 	"env": {
 		"SLACK_BOT_TOKEN": {
-			"description": "Slack Bot Token(xoxb-)",
-			"value": ""
+			"description": "Slack Bot Token(xoxb-)"
 		},
 		"SLACK_SIGNING_SECRET": {
-			"description": "Signing Secret generated from App Credentials",
-			"value": ""
+			"description": "Signing Secret generated from App Credentials"
 		},
 		"AGGREGATE_CHANNEL_ID": {
-			"description": "Aggregate destination channel id",
+			"description": "Aggregate destination channel id(if DISPATCH_CHANNEL is set collectly,ignore this parameter)",
 			"required": false
 		},
 		"DISPATCH_CHANNEL": {
-			"description": "Message Dispatch Rules",
+			"description": "Message Dispatch Rules(JSON format.)",
 			"required": false
 		}
 
