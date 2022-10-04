@@ -87,7 +87,7 @@ dockerコンテナを作るようにしたので、`ghcr.io/walkure/aggrechans:l
 
 コンテナは`SLACK_APP_TOKEN`が定義されているとsocket modeで起動し、なければwebhook modeで起動します。`SLACK_BOT_TOKEN`はどちらの場合も必要です。
 
-`docker run -e SLACK_BOT_TOKEN=(BOT TOKEN) -e REDIS_HOST=localhost:6379 -e AGGREGATE_CHANNEL_ID=C02LPUV1C5R -e SLACK_APP_TOKEN=(APP TOKEN) ghcr.io/walkure/aggrechans:latest`
+`docker run -e SLACK_BOT_TOKEN=(BOT TOKEN) -e REDIS_HOST=localhost:6379 -e AGGREGATE_CHANNEL_ID=(CHANNEL_ID) -e SLACK_APP_TOKEN=(APP TOKEN) ghcr.io/walkure/aggrechans:latest`
 
 webhook modeの場合は`REDIS_HOST`や`SLACK_SIGNING_SECRET`(App CredentialsのSigning Secretにある値)も必要です。
 socket modeの場合は`REDIS_HOST`の存在は任意で、`SLACK_SIGNING_SECRET`は不要です。
