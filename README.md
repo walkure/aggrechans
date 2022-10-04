@@ -81,13 +81,11 @@ WebhookでEvent API受け取る場合はHerokuでも動きます。
 
 ## Docker
 
-dockerコンテナを作るようにしたので、`ghcr.io/walkure/aggrechans:latest`などで取ってくることが出来ます。
-
-(Package)[https://github.com/walkure/aggrechans/pkgs/container/aggrechans]を参照してください。
+dockerコンテナを作るようにしたので、`ghcr.io/walkure/aggrechans:latest`などで取ってくることが出来ます。[Package](https://github.com/walkure/aggrechans/pkgs/container/aggrechans)を参照してください。
 
 ### Dockerでの起動
 
-`SLACK_APP_TOKEN`が定義されているとsocket modeで起動し、なければwebhook modeで起動します。`SLACK_BOT_TOKEN`はどちらの場合も必要です。
+コンテナは`SLACK_APP_TOKEN`が定義されているとsocket modeで起動し、なければwebhook modeで起動します。`SLACK_BOT_TOKEN`はどちらの場合も必要です。
 
 `docker run -e SLACK_BOT_TOKEN=(BOT TOKEN) -e REDIS_HOST=localhost:6379 -e AGGREGATE_CHANNEL_ID=C02LPUV1C5R -e SLACK_APP_TOKEN=(APP TOKEN) ghcr.io/walkure/aggrechans:latest`
 
