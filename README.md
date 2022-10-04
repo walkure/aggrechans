@@ -5,7 +5,7 @@ Slackの全Public channelにおける人間の発言を一つのチャンネル�
 ## Appの権限設定
 
 - アプリを生成して、適当に設定します。
-- socket modeを有効にして、eventを有効化します。
+- (必要に応じてsocket modeを有効にして)eventを有効化します。
 - スコープは以下の設定をしてください。
 - private channelに発言させるには、private channelでintegration設定で当該アプリを入れる必要があります。
 
@@ -78,6 +78,21 @@ Slackが送ってくるイベントではチャンネルとユーザ名が内部
 WebhookでEvent API受け取る場合はHerokuでも動きます。
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
+## Docker
+
+dockerコンテナを作るようにしたので、`ghcr.io/walkure/aggrechans:latest`などで取ってくることが出来ます。
+
+(Package)[https://github.com/walkure/aggrechans/pkgs/container/aggrechans]を参照してください。
+
+### Dockerでの起動
+
+`SLACK_APP_TOKEN`が定義されているとsocket modeで起動し、なければwebhook modeで起動します。`SLACK_BOT_TOKEN`はどちらの場合も必要です。
+
+`docker run -e SLACK_BOT_TOKEN=(BOT TOKEN) -e REDIS_HOST=localhost:6379 -e AGGREGATE_CHANNEL_ID=C02LPUV1C5R -e SLACK_APP_TOKEN=(APP TOKEN) ghcr.io/walkure/aggrechans:latest`
+
+webhook modeの場合は`REDIS_HOST`や`SLACK_SIGNING_SECRET`(App CredentialsのSigning Secretにある値)も必要です。
+socket modeの場合は`REDIS_HOST`の存在は任意で、`SLACK_SIGNING_SECRET`は不要です。
 
 ## Author
 
