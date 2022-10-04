@@ -107,7 +107,7 @@ func main() {
 			case socketmode.EventTypeHello:
 				fmt.Println("Hello from Slack with Socket Mode...")
 			case socketmode.EventTypeConnectionError:
-				fmt.Println("Connection failed. Retrying later...")
+				fmt.Printf("Connection failed(%+v). Retrying later...", evt.Data)
 			case socketmode.EventTypeConnected:
 				fmt.Println("Connected to Slack with Socket Mode.")
 			case socketmode.EventTypeEventsAPI:
