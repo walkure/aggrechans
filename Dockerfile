@@ -1,4 +1,4 @@
-FROM golang:1.19.1-alpine3.16 as builder
+FROM golang:1.26.5-alpine3.24 as builder
 
 WORKDIR /app
 COPY . /app/
@@ -8,7 +8,7 @@ RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/socket ./socket/ 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/webhook ./webhook/ 
 
-FROM busybox:1.35.0-musl as runner
+FROM busybox:1.38.0-musl as runner
 
 COPY --from=builder  /bin/webhook /app/
 COPY --from=builder  /bin/socket /app/
