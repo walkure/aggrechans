@@ -128,6 +128,13 @@ func (info *UserInfo) setUserInfo(ctx context.Context, user *slack.User) *UserPr
 		App:    user.IsAppUser,
 	}
 
+	// avoid clobbering a known-good cached avatar with an empty one from a transient/incomplete response
+	if prof.Avatar == "" {
+		if cached, ok := info.lookupUserInfo(ctx, user.ID); ok && cached.Avatar != "" {
+			return cached
+		}
+	}
+
 	func() {
 		info.mu.Lock()
 		defer info.mu.Unlock()
@@ -151,6 +158,13 @@ func (info *UserInfo) setBotInfo(ctx context.Context, bot *slack.Bot) *UserProfi
 		Avatar: bot.Icons.Image72,
 		Bot:    true,
 		App:    true,
+	}
+
+	// avoid clobbering a known-good cached avatar with an empty one from a transient/incomplete response
+	if prof.Avatar == "" {
+		if cached, ok := info.lookupUserInfo(ctx, bot.ID); ok && cached.Avatar != "" {
+			return cached
+		}
 	}
 
 	func() {
