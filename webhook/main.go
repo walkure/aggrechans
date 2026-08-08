@@ -39,6 +39,11 @@ func createSlackClient() (*slack.Client, error) {
 
 func main() {
 	signingSecret := os.Getenv("SLACK_SIGNING_SECRET")
+	if signingSecret == "" {
+		fmt.Fprintln(os.Stderr, "SLACK_SIGNING_SECRET must be set")
+		return
+	}
+
 	api, err := createSlackClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot load slack config:%+v\n", err)
