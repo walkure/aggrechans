@@ -79,6 +79,12 @@ WebhookでEvent API受け取る場合はHerokuでも動きます。
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
+## Render
+
+WebhookでEvent API受け取る場合はRenderでも動きます。
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
 ## Docker
 
 dockerコンテナを作るようにしたので、`ghcr.io/walkure/aggrechans:latest`などで取ってくることが出来ます。[Package](https://github.com/walkure/aggrechans/pkgs/container/aggrechans)を参照してください。

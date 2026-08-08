@@ -1,0 +1,29 @@
+# https://render.com/docs/blueprint-spec
+services:
+
+  - type: web
+    name: aggrechans
+    env: docker
+    repo: https://github.com/walkure/aggrechans.git
+    region: singapore
+    plan: free
+    branch: master
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: aggrechans-redis
+          property: connectionString
+      - key: DISPATCH_CHANNEL
+        sync: false
+      - key: SLACK_BOT_TOKEN
+        sync: false
+      - key: SLACK_SIGNING_SECRET
+        sync: false
+
+  - type: redis
+    name: aggrechans-redis
+    region: singapore
+    ipAllowList: []
+    plan: free
+    maxmemoryPolicy: allkeys-lru
