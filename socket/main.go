@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
 
@@ -65,7 +66,9 @@ func main() {
 	}
 	fmt.Println(dispatcher.Rules())
 
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	chinfo := &common.ChannelInfo{}
 	uinfo := &common.UserInfo{}
 
@@ -135,5 +138,9 @@ func main() {
 		}
 	}()
 
-	client.Run()
+	if err := client.RunContext(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		fmt.Printf("SocketMode client stopped unexpectedly:%v", err)
+		os.Exit(-1)
+	}
+	fmt.Println("[INFO] SIGINT received. byebye~")
 }
