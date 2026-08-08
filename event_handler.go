@@ -45,6 +45,8 @@ func messageEventHandler(ctx context.Context, api *slack.Client, ev *slackevents
 	case slack.MsgSubTypeMessageChanged:
 		if ev.Message != nil {
 			text = ev.Message.Text
+			ev.TimeStamp = ev.Message.TimeStamp
+			ev.ThreadTimeStamp = ev.Message.ThreadTimeStamp
 			if ev.Message.Edited != nil {
 				uid = ev.Message.Edited.User
 			}
