@@ -17,9 +17,14 @@ type simpleDispatcher struct {
 	chanId string
 }
 
+type dispatchRule struct {
+	pattern string
+	cid     string
+}
+
 type mappedDispatcher struct {
-	suffixMap map[string]string
-	prefixMap map[string]string
+	suffixRules []dispatchRule
+	prefixRules []dispatchRule
 }
 
 func (d simpleDispatcher) Dispatch(chanName string) string {
@@ -31,15 +36,15 @@ func (d simpleDispatcher) Rules() string {
 }
 
 func (d *mappedDispatcher) Dispatch(chanName string) string {
-	for k, v := range d.prefixMap {
-		if strings.HasPrefix(chanName, k) {
-			return v
+	for _, r := range d.prefixRules {
+		if strings.HasPrefix(chanName, r.pattern) {
+			return r.cid
 		}
 	}
 
-	for k, v := range d.suffixMap {
-		if strings.HasSuffix(chanName, k) {
-			return v
+	for _, r := range d.suffixRules {
+		if strings.HasSuffix(chanName, r.pattern) {
+			return r.cid
 		}
 	}
 
@@ -49,12 +54,12 @@ func (d *mappedDispatcher) Dispatch(chanName string) string {
 func (d *mappedDispatcher) Rules() string {
 	var rules []string
 
-	for k, v := range d.prefixMap {
-		rules = append(rules, fmt.Sprintf("prefix[%s]->[%s]", k, v))
+	for _, r := range d.prefixRules {
+		rules = append(rules, fmt.Sprintf("prefix[%s]->[%s]", r.pattern, r.cid))
 	}
 
-	for k, v := range d.suffixMap {
-		rules = append(rules, fmt.Sprintf("suffix[%s]->[%s]", k, v))
+	for _, r := range d.suffixRules {
+		rules = append(rules, fmt.Sprintf("suffix[%s]->[%s]", r.pattern, r.cid))
 	}
 
 	return strings.Join(rules, "\n")
@@ -100,22 +105,22 @@ func newMapDispatcher() (*mappedDispatcher, error) {
 		return nil, fmt.Errorf("JSON unmarshal error:%w", err)
 	}
 
-	md := mappedDispatcher{prefixMap: map[string]string{}, suffixMap: map[string]string{}}
+	md := mappedDispatcher{}
 	for _, v := range result {
 		if v.ChannelId == "" {
 			continue
 		}
 
 		if v.Prefix != "" {
-			md.prefixMap[v.Prefix] = v.ChannelId
+			md.prefixRules = append(md.prefixRules, dispatchRule{pattern: v.Prefix, cid: v.ChannelId})
 		}
 
 		if v.Suffix != "" {
-			md.suffixMap[v.Suffix] = v.ChannelId
+			md.suffixRules = append(md.suffixRules, dispatchRule{pattern: v.Suffix, cid: v.ChannelId})
 		}
 	}
 
-	if len(md.prefixMap)+len(md.suffixMap) == 0 {
+	if len(md.prefixRules)+len(md.suffixRules) == 0 {
 		return nil, errors.New("no dispatch rules found")
 	}
 

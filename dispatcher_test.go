@@ -61,8 +61,26 @@ func TestNewMapDispatcher(t *testing.T) {
 
 	v, err := newMapDispatcher()
 	assert.Nil(t, err)
-	assert.Equal(t, "CIDTIMES", v.prefixMap["times_"])
-	assert.Equal(t, "CIDZATSU", v.suffixMap["_zatsu"])
-	assert.Equal(t, "CIDFOOBAR", v.suffixMap["_foobar"])
+	assert.Equal(t, []dispatchRule{{pattern: "times_", cid: "CIDTIMES"}}, v.prefixRules)
+	assert.Equal(t, []dispatchRule{
+		{pattern: "_zatsu", cid: "CIDZATSU"},
+		{pattern: "_foobar", cid: "CIDFOOBAR"},
+	}, v.suffixRules)
 
+}
+
+func TestMapDispatcherOverlapPrefersFirstRule(t *testing.T) {
+	json := `[{"prefix": "times_",
+	"cid": "CIDTIMES"
+},{
+	"prefix": "times_foo_",
+	"cid": "CIDTIMESFOO"
+}]`
+	os.Setenv("DISPATCH_CHANNEL", json)
+	t.Cleanup(func() { os.Unsetenv("DISPATCH_CHANNEL") })
+
+	d, err := NewDispatcher()
+	assert.Nil(t, err)
+	// "times_foo_bar" matches both rules; registration order must decide the winner deterministically.
+	assert.Equal(t, "CIDTIMES", d.Dispatch("times_foo_bar"))
 }
