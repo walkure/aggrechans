@@ -61,7 +61,7 @@ func (info *UserInfo) GetUserProfile(ctx context.Context, uid string) (*UserProf
 	}
 
 	if strings.HasPrefix(uid, "B") {
-		bot, err := info.api.GetBotInfoContext(ctx, uid)
+		bot, err := info.api.GetBotInfoContext(ctx, slack.GetBotInfoParameters{Bot: uid})
 		if err != nil {
 			return nil, fmt.Errorf("err at bot.info(uid=%s):%w", uid, err)
 		}

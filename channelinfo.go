@@ -126,7 +126,7 @@ func (info *ChannelInfo) GetName(ctx context.Context, cid string) (string, error
 		return name, nil
 	}
 
-	cinfo, err := info.api.GetConversationInfoContext(ctx, cid, false)
+	cinfo, err := info.api.GetConversationInfoContext(ctx, &slack.GetConversationInfoInput{ChannelID: cid})
 	if err != nil {
 		return "", fmt.Errorf("err at conversations.info(cid=%s):%w", cid, err)
 	}
