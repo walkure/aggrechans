@@ -184,7 +184,7 @@ func (info *UserInfo) setBotInfo(ctx context.Context, bot *slack.Bot) *UserProfi
 	return prof
 }
 
-func (info *UserInfo) ReplaceMentionUIDs(ctx context.Context, orig string) (string, error) {
+func (info *UserInfo) ReplaceMentionUIDs(ctx context.Context, orig string) string {
 
 	uids := extractUids(orig)
 
@@ -192,13 +192,14 @@ func (info *UserInfo) ReplaceMentionUIDs(ctx context.Context, orig string) (stri
 	for _, uid := range uids {
 		prof, err := info.GetUserProfile(ctx, uid)
 		if err != nil {
-			return "", fmt.Errorf("error replacing uids:%w", err)
+			fmt.Fprintf(os.Stderr, "cannot resolve mention uid=%s:%v\n", uid, err)
+			continue
 		}
 		oldnews = append(oldnews, "<@"+uid+">", "<＠"+prof.Name+">")
 	}
 
 	reps := strings.NewReplacer(oldnews...)
-	return reps.Replace(orig), nil
+	return reps.Replace(orig)
 }
 
 func extractUids(msg string) []string {

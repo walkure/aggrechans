@@ -93,11 +93,7 @@ func messageEventHandler(ctx context.Context, api *slack.Client, ev *slackevents
 		msg = ""
 		disableUnfurlLink = false
 	default:
-		msg, err = ui.ReplaceMentionUIDs(ctx, text)
-		if err != nil {
-			return fmt.Errorf("cannot resolve mentions:%w", err)
-		}
-		msg = EscapeChannelCall(msg)
+		msg = EscapeChannelCall(ui.ReplaceMentionUIDs(ctx, text))
 	}
 
 	fullMsg := msgLink + " " + msg
