@@ -1,12 +1,15 @@
-FROM golang:1.26.5-alpine3.24 as builder
+FROM --platform=$BUILDPLATFORM golang:1.26.5-alpine3.24 as builder
+
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /app
 COPY . /app/
 RUN apk update && apk add --no-cache ca-certificates && update-ca-certificates
 
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/socket ./socket/ 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/webhook ./webhook/ 
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /bin/socket ./socket/ 
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /bin/webhook ./webhook/ 
 
 FROM busybox:1.38.0-musl as runner
 
