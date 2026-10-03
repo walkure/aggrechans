@@ -12,14 +12,22 @@ RUN go mod download
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOARM=${TARGETVARIANT#v} go build -o /bin/socket ./socket/
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOARM=${TARGETVARIANT#v} go build -o /bin/webhook ./webhook/
 
-FROM busybox:1.38.0-musl AS runner
+FROM scratch AS webhook
 
-COPY --from=builder  /bin/webhook /app/
-COPY --from=builder  /bin/socket /app/
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY ./entrypoint.sh .
+COPY --from=builder /bin/webhook /webhook
+USER 65534:65534
 
 ENV PORT=8080
 EXPOSE ${PORT}
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/webhook"]
+
+# last stage: built when no --target is given
+FROM scratch AS socket
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /bin/socket /socket
+USER 65534:65534
+
+ENTRYPOINT ["/socket"]

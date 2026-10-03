@@ -85,18 +85,42 @@ WebhookでEvent API受け取る場合はRenderでも動きます。
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
+Renderではリポジトリからビルドせず、GHCRに公開しているwebhook modeのイメージ`ghcr.io/walkure/aggrechans:latest-webhook`を使います(`render.yaml`で設定済み)。
+
+新しいイメージは自動ではデプロイされません。リリース後に、Renderの管理画面からデプロイしてください。
+
+> 以前に作ったサービスはリポジトリからビルドする設定のままで、そのままだとsocket modeのイメージがビルドされて起動に失敗します。Renderの管理画面でイメージから動かす設定(`ghcr.io/walkure/aggrechans:latest-webhook`)に切り替えてください。
+
 ## Docker
 
 dockerコンテナを作るようにしたので、`ghcr.io/walkure/aggrechans:latest`などで取ってくることが出来ます。[Package](https://github.com/walkure/aggrechans/pkgs/container/aggrechans)を参照してください。
 
+socket modeとwebhook modeでイメージが分かれています。どちらも`linux/amd64`、`linux/arm64`、`linux/arm/v6`、`linux/arm/v7`に対応しています。
+
+| mode | タグ |
+| --- | --- |
+| socket mode | `latest`, `1.1.2` など |
+| webhook mode | `latest-webhook`, `1.1.2-webhook` など(末尾に`-webhook`) |
+
 ### Dockerでの起動
 
-コンテナは`SLACK_APP_TOKEN`が定義されているとsocket modeで起動し、なければwebhook modeで起動します。`SLACK_BOT_TOKEN`はどちらの場合も必要です。
+`SLACK_BOT_TOKEN`はどちらのmodeでも必要です。
+
+socket modeの場合は`SLACK_APP_TOKEN`も必要です。`REDIS_HOST`の存在は任意で、`SLACK_SIGNING_SECRET`は不要です。
 
 `docker run -e SLACK_BOT_TOKEN=(BOT TOKEN) -e REDIS_HOST=localhost:6379 -e AGGREGATE_CHANNEL_ID=(CHANNEL_ID) -e SLACK_APP_TOKEN=(APP TOKEN) ghcr.io/walkure/aggrechans:latest`
 
-webhook modeの場合は`REDIS_HOST`や`SLACK_SIGNING_SECRET`(App CredentialsのSigning Secretにある値)も必要です。
-socket modeの場合は`REDIS_HOST`の存在は任意で、`SLACK_SIGNING_SECRET`は不要です。
+webhook modeの場合は`REDIS_HOST`と`SLACK_SIGNING_SECRET`(App CredentialsのSigning Secretにある値)も必要です。待ち受けポートは`PORT`(既定値8080)で変えられます。
+
+`docker run -p 8080:8080 -e SLACK_BOT_TOKEN=(BOT TOKEN) -e SLACK_SIGNING_SECRET=(SIGNING SECRET) -e REDIS_HOST=localhost:6379 -e AGGREGATE_CHANNEL_ID=(CHANNEL_ID) ghcr.io/walkure/aggrechans:latest-webhook`
+
+### イメージのビルド
+
+`--target`でmodeを選びます(指定しなければ`socket`)。
+
+`docker build --target webhook .`
+
+> 以前のイメージは`SLACK_APP_TOKEN`の有無でmodeを自動で切り替えていましたが、`latest`はsocket mode専用になりました。webhook modeで使っている場合は`latest-webhook`などに切り替えてください。
 
 ## Author
 

@@ -3,11 +3,11 @@ services:
 
   - type: web
     name: aggrechans
-    env: docker
-    repo: https://github.com/walkure/aggrechans.git
+    runtime: image
+    image:
+      url: ghcr.io/walkure/aggrechans:latest-webhook
     region: singapore
     plan: free
-    branch: master
     envVars:
       - key: REDIS_URL
         fromService:

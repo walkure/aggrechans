@@ -26,8 +26,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # socket mode (main image)
+      - name: Extract metadata (tags, labels) for socket image
+        id: meta-socket
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -36,14 +40,35 @@ jobs:
             type=semver,pattern={{version}}
             type=sha
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build and push Docker image
+      - name: Build and push socket image
         uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
+          target: socket
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-socket.outputs.tags }}
+          labels: ${{ steps.meta-socket.outputs.labels }}
+
+      # webhook mode (tags suffixed with -webhook)
+      - name: Extract metadata (tags, labels) for webhook image
+        id: meta-webhook
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            suffix=-webhook,onlatest=true
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha
+
+      - name: Build and push webhook image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
+          target: webhook
+          push: true
+          tags: ${{ steps.meta-webhook.outputs.tags }}
+          labels: ${{ steps.meta-webhook.outputs.labels }}
