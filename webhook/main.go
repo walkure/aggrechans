@@ -39,16 +39,21 @@ func createSlackClient() (*slack.Client, error) {
 }
 
 func main() {
+	// os.Exit skips deferred calls, so keep them inside run()
+	os.Exit(run())
+}
+
+func run() int {
 	signingSecret := os.Getenv("SLACK_SIGNING_SECRET")
 	if signingSecret == "" {
 		fmt.Fprintln(os.Stderr, "SLACK_SIGNING_SECRET must be set")
-		return
+		return 1
 	}
 
 	api, err := createSlackClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot load slack config:%+v\n", err)
-		return
+		return 1
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -57,7 +62,7 @@ func main() {
 	opt := common.LoadRedisConfig()
 	if opt == nil {
 		fmt.Fprintln(os.Stderr, "cannot load redis config.")
-		return
+		return 1
 	}
 	redis := redis.NewClient(opt)
 	uinfo := common.CreateUserInfo(api, redis)
@@ -66,7 +71,7 @@ func main() {
 	dispatcher, err := common.NewDispatcher()
 	if err != nil {
 		fmt.Printf("cannot load dispatch info:%v", err)
-		os.Exit(-1)
+		return 1
 	}
 	fmt.Println(dispatcher.Rules())
 
@@ -126,10 +131,11 @@ func main() {
 	fmt.Printf("[INFO] Server listening at %s\n", port)
 	if err := serv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintf(os.Stderr, "[FATAL] server shutdown. %+v\n", err)
-		return
+		return 1
 	}
 	// wait for in-flight requests to finish
 	<-shutdownDone
+	return 0
 }
 
 func loadRequest(w http.ResponseWriter, r *http.Request, signingSecret string) (json.RawMessage, error) {
