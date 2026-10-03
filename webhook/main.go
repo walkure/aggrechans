@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -50,7 +51,7 @@ func main() {
 		return
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	opt := common.LoadRedisConfig()
@@ -111,17 +112,24 @@ func main() {
 		Handler: nil,
 	}
 
+	shutdownDone := make(chan struct{})
 	go func() {
+		defer close(shutdownDone)
 		<-ctx.Done()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		fmt.Println("[INFO] SIGINT received. byebye~")
+		fmt.Println("[INFO] signal received. byebye~")
 		serv.Shutdown(ctx)
 	}()
 
 	fmt.Printf("[INFO] Server listening at %s\n", port)
-	fmt.Fprintf(os.Stderr, "[FATAL] server shutdown. %+v\n", serv.ListenAndServe())
+	if err := serv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		fmt.Fprintf(os.Stderr, "[FATAL] server shutdown. %+v\n", err)
+		return
+	}
+	// wait for in-flight requests to finish
+	<-shutdownDone
 }
 
 func loadRequest(w http.ResponseWriter, r *http.Request, signingSecret string) (json.RawMessage, error) {

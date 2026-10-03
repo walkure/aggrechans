@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/slack-go/slack"
@@ -66,7 +67,7 @@ func main() {
 	}
 	fmt.Println(dispatcher.Rules())
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	chinfo := &common.ChannelInfo{}
@@ -142,5 +143,5 @@ func main() {
 		fmt.Printf("SocketMode client stopped unexpectedly:%v", err)
 		os.Exit(-1)
 	}
-	fmt.Println("[INFO] SIGINT received. byebye~")
+	fmt.Println("[INFO] signal received. byebye~")
 }
