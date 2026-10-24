@@ -1,6 +1,6 @@
 module github.com/walkure/aggrechans
 
-go 1.26
+go 1.27
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
