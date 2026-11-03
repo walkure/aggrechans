@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackevents"
 )
 
 type UserInfo struct {
@@ -77,8 +78,15 @@ func (info *UserInfo) GetUserProfile(ctx context.Context, uid string) (*UserProf
 	return info.setUserInfo(ctx, user), nil
 }
 
-func (info *UserInfo) HandleUserChangeEvent(ctx context.Context, ev *slack.UserChangeEvent) {
-	info.setUserInfo(ctx, &ev.User)
+func (info *UserInfo) HandleUserChangeEvent(ctx context.Context, ev *slackevents.UserChangeEvent) {
+	// slackevents.User is a distinct type from slack.User; copy only the fields setUserInfo reads
+	info.setUserInfo(ctx, &slack.User{
+		ID:        ev.User.ID,
+		Name:      ev.User.Name,
+		IsBot:     ev.User.IsBot,
+		IsAppUser: ev.User.IsAppUser,
+		Profile:   slack.UserProfile{Image72: ev.User.Profile.Image72},
+	})
 }
 
 func (info *UserInfo) lookupUserInfo(ctx context.Context, uid string) (*UserProfile, bool) {
