@@ -18,7 +18,7 @@ func CallbackEventHandler(ctx context.Context, api *slack.Client, eventsAPIEvent
 		return messageEventHandler(ctx, api, ev, ci, ui, destChFn)
 	case *slackevents.ChannelRenameEvent:
 		ci.UpdateName(ctx, ev.Channel)
-	case *slack.UserChangeEvent:
+	case *slackevents.UserChangeEvent:
 		ui.HandleUserChangeEvent(ctx, ev)
 	case *slackevents.ChannelCreatedEvent:
 		ci.HandleCreateEvent(ctx, ev.Channel)
