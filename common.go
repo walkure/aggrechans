@@ -10,11 +10,16 @@ import (
 	"github.com/slack-go/slack"
 )
 
+// PostMessage posts msg to channel.
+// If prof is nil, the message is posted without customizing username and icon (required for user tokens).
 func PostMessage(ctx context.Context, api *slack.Client, prof *UserProfile, blocks *[]slack.Block, disableUnfurlLink bool, msg string, channel string) error {
 
-	options := []slack.MsgOption{slack.MsgOptionText(msg, false),
-		slack.MsgOptionUsername(prof.Name),
-		slack.MsgOptionIconURL(prof.Avatar)}
+	options := []slack.MsgOption{slack.MsgOptionText(msg, false)}
+	if prof != nil {
+		options = append(options,
+			slack.MsgOptionUsername(prof.Name),
+			slack.MsgOptionIconURL(prof.Avatar))
+	}
 
 	if blocks != nil && len(*blocks) > 1 {
 		options = append(options, slack.MsgOptionBlocks(*blocks...))

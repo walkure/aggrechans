@@ -7,7 +7,12 @@
 	"website": "https://github.com/walkure/aggrechans",
 	"env": {
 		"SLACK_BOT_TOKEN": {
-			"description": "Slack Bot Token(xoxb-)"
+			"description": "Slack Bot Token(xoxb-). Set this or SLACK_USER_TOKEN.",
+			"required": false
+		},
+		"SLACK_USER_TOKEN": {
+			"description": "Slack User Token(xoxp-). Set this or SLACK_BOT_TOKEN.",
+			"required": false
 		},
 		"SLACK_SIGNING_SECRET": {
 			"description": "Signing Secret generated from App Credentials"

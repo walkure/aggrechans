@@ -18,27 +18,23 @@ import (
 	common "github.com/walkure/aggrechans"
 )
 
-func createSlackSocketClient() (*slack.Client, *socketmode.Client, error) {
+func createSlackSocketClient() (*slack.Client, *socketmode.Client, bool, error) {
 	appToken := os.Getenv("SLACK_APP_TOKEN")
 	if appToken == "" {
-		return nil, nil, errors.New("SLACK_APP_TOKEN must be set")
+		return nil, nil, false, errors.New("SLACK_APP_TOKEN must be set")
 	}
 
 	if !strings.HasPrefix(appToken, "xapp-") {
-		return nil, nil, errors.New("SLACK_APP_TOKEN must have the prefix \"xapp-\"")
+		return nil, nil, false, errors.New("SLACK_APP_TOKEN must have the prefix \"xapp-\"")
 	}
 
-	botToken := os.Getenv("SLACK_BOT_TOKEN")
-	if botToken == "" {
-		return nil, nil, errors.New("SLACK_BOT_TOKEN must be set")
-	}
-
-	if !strings.HasPrefix(botToken, "xoxb-") {
-		return nil, nil, errors.New("SLACK_BOT_TOKEN must have the prefix \"xoxb-\"")
+	token, err := common.LoadSlackToken()
+	if err != nil {
+		return nil, nil, false, err
 	}
 
 	api := slack.New(
-		botToken,
+		token.Token,
 		slack.OptionAppLevelToken(appToken),
 		//slack.OptionDebug(true),
 		//slack.OptionLog(log.New(os.Stdout, "api: ", log.Lshortfile|log.LstdFlags)),
@@ -50,11 +46,11 @@ func createSlackSocketClient() (*slack.Client, *socketmode.Client, error) {
 		//socketmode.OptionLog(log.New(os.Stdout, "socketmode: ", log.Lshortfile|log.LstdFlags)),
 	)
 
-	return api, client, nil
+	return api, client, token.IsUser, nil
 }
 
 func main() {
-	api, client, err := createSlackSocketClient()
+	api, client, userToken, err := createSlackSocketClient()
 	if err != nil {
 		fmt.Printf("cannot establish connectins:%v", err)
 		os.Exit(-1)
@@ -125,7 +121,7 @@ func main() {
 				case slackevents.CallbackEvent:
 					go func() {
 						err := common.CallbackEventHandler(context.TODO(), api, eventsAPIEvent, chinfo, uinfo,
-							dispatcher.Dispatch)
+							dispatcher, userToken)
 						if err != nil {
 							fmt.Fprintf(os.Stderr, "Error!:%+v\n", err)
 						}

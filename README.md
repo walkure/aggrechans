@@ -26,6 +26,20 @@ Slackの全Public channelにおける人間の発言を一つのチャンネル�
   - `channels:read` - チャンネル状態の変化イベント
   - `users:read` - ユーザ情報の変更イベント
 
+#### user tokenだけで動かす場合
+
+Bot tokenの代わりにuser token(`xoxp-`)だけで動かすこともできます。その場合はBot scopeは不要で、User scopeに以下を設定してください。eventsはすべてuser eventsにします。
+
+- `users:read` ユーザIDとユーザ名の変換、ユーザ情報の変更イベント
+- `channels:read` チャンネルIDとチャンネル名の変換、チャンネル状態の変化イベント
+- `channels:history` イベントを受信
+- `chat:write` 集約先へpostする権限
+- `team:read` チームURIのドメイン取得
+
+user tokenでは投稿者の名前・アイコンを変更できない(`chat:write.customize`はbot専用)ため、集約先への投稿はtokenを発行したユーザ本人の名前で行われ、元の発言者名は本文に`*発言者名*`として入ります。
+また、tokenを発行したユーザが参加しているチャンネルの発言だけが集約対象になり、集約先チャンネルにもそのユーザが参加している必要があります。
+集約先チャンネル自体の発言は(自分の投稿を再集約するループを避けるため)集約しません。
+
 ### Subscribe events
 
 #### bot(or user) events
@@ -104,7 +118,7 @@ socket modeとwebhook modeでイメージが分かれています。どちらも
 
 ### Dockerでの起動
 
-`SLACK_BOT_TOKEN`はどちらのmodeでも必要です。
+`SLACK_BOT_TOKEN`(`xoxb-`)はどちらのmodeでも必要です。user tokenで動かす場合は代わりに`SLACK_USER_TOKEN`(`xoxp-`)を設定します(両方は設定できません)。
 
 socket modeの場合は`SLACK_APP_TOKEN`も必要です。`REDIS_HOST`の存在は任意で、`SLACK_SIGNING_SECRET`は不要です。
 

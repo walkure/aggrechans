@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -21,21 +20,17 @@ import (
 
 var AGG_CHAN_ID = os.Getenv("AGGREGATE_CHANNEL_ID")
 
-func createSlackClient() (*slack.Client, error) {
-	botToken := os.Getenv("SLACK_BOT_TOKEN")
-	if botToken == "" {
-		return nil, errors.New("SLACK_BOT_TOKEN must be set")
-	}
-
-	if !strings.HasPrefix(botToken, "xoxb-") {
-		return nil, errors.New("SLACK_BOT_TOKEN must have the prefix \"xoxb-\"")
+func createSlackClient() (*slack.Client, bool, error) {
+	token, err := common.LoadSlackToken()
+	if err != nil {
+		return nil, false, err
 	}
 
 	return slack.New(
-		botToken,
+		token.Token,
 		//slack.OptionDebug(true),
 		//slack.OptionLog(log.New(os.Stdout, "api: ", log.Lshortfile|log.LstdFlags)),
-	), nil
+	), token.IsUser, nil
 }
 
 func main() {
@@ -50,7 +45,7 @@ func run() int {
 		return 1
 	}
 
-	api, err := createSlackClient()
+	api, userToken, err := createSlackClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot load slack config:%+v\n", err)
 		return 1
@@ -98,7 +93,7 @@ func run() int {
 			w.Write([]byte(r.Challenge))
 		case slackevents.CallbackEvent:
 			go func() {
-				err := common.CallbackEventHandler(context.Background(), api, eventsAPIEvent, chinfo, uinfo, dispatcher.Dispatch)
+				err := common.CallbackEventHandler(context.Background(), api, eventsAPIEvent, chinfo, uinfo, dispatcher, userToken)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error!:%+v\n", err)
 				}
