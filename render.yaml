@@ -18,6 +18,9 @@ services:
         sync: false
       - key: SLACK_BOT_TOKEN
         sync: false
+      # set SLACK_USER_TOKEN instead of SLACK_BOT_TOKEN to run with a user token
+      - key: SLACK_USER_TOKEN
+        sync: false
       - key: SLACK_SIGNING_SECRET
         sync: false
 

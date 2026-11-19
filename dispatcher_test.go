@@ -18,6 +18,8 @@ func TestSimpleDispatcher(t *testing.T) {
 	assert.Equal(t, "common.simpleDispatcher", reflect.TypeOf(d).String())
 	assert.Equal(t, "CIDFOOBAR", d.Dispatch("hoge"))
 	assert.Equal(t, "CIDFOOBAR", d.Dispatch("poyo"))
+	assert.True(t, d.IsDestination("CIDFOOBAR"))
+	assert.False(t, d.IsDestination("CIDHOGE"))
 }
 
 func TestMapDispatcher(t *testing.T) {
@@ -43,7 +45,9 @@ func TestMapDispatcher(t *testing.T) {
 	assert.Equal(t, "CIDZATSU", d.Dispatch("timez_hoge_zatsu"))
 	assert.Equal(t, "", d.Dispatch("poyo"))
 	assert.Equal(t, "CIDFOOBAR", d.Dispatch("poyo_foobar"))
-
+	assert.True(t, d.IsDestination("CIDTIMES"))
+	assert.True(t, d.IsDestination("CIDZATSU"))
+	assert.False(t, d.IsDestination("CIDHOGE"))
 }
 
 func TestNewMapDispatcher(t *testing.T) {

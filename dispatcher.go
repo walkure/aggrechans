@@ -11,6 +11,8 @@ import (
 type ChannelDispatcher interface {
 	Dispatch(chanName string) string
 	Rules() string
+	// IsDestination reports whether cid is one of the aggregate destination channels.
+	IsDestination(cid string) bool
 }
 
 type simpleDispatcher struct {
@@ -31,6 +33,10 @@ func (d simpleDispatcher) Dispatch(chanName string) string {
 	return d.chanId
 }
 
+func (d simpleDispatcher) IsDestination(cid string) bool {
+	return d.chanId == cid
+}
+
 func (d simpleDispatcher) Rules() string {
 	return fmt.Sprintf("send every message to:%s", d.chanId)
 }
@@ -49,6 +55,22 @@ func (d *mappedDispatcher) Dispatch(chanName string) string {
 	}
 
 	return ""
+}
+
+func (d *mappedDispatcher) IsDestination(cid string) bool {
+	for _, r := range d.prefixRules {
+		if r.cid == cid {
+			return true
+		}
+	}
+
+	for _, r := range d.suffixRules {
+		if r.cid == cid {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (d *mappedDispatcher) Rules() string {

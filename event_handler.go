@@ -8,14 +8,14 @@ import (
 	"github.com/slack-go/slack/slackevents"
 )
 
-type DestinationChannelFunc func(chanName string) string
-
+// CallbackEventHandler handles a callback event.
+// userToken must be true when api uses a user token(xoxp-).
 func CallbackEventHandler(ctx context.Context, api *slack.Client, eventsAPIEvent slackevents.EventsAPIEvent,
-	ci *ChannelInfo, ui *UserInfo, destChFn DestinationChannelFunc) error {
+	ci *ChannelInfo, ui *UserInfo, dispatcher ChannelDispatcher, userToken bool) error {
 	innerEvent := eventsAPIEvent.InnerEvent
 	switch ev := innerEvent.Data.(type) {
 	case *slackevents.MessageEvent:
-		return messageEventHandler(ctx, api, ev, ci, ui, destChFn)
+		return messageEventHandler(ctx, api, ev, ci, ui, dispatcher, userToken)
 	case *slackevents.ChannelRenameEvent:
 		ci.UpdateName(ctx, ev.Channel)
 	case *slackevents.UserChangeEvent:
@@ -35,7 +35,13 @@ func CallbackEventHandler(ctx context.Context, api *slack.Client, eventsAPIEvent
 }
 
 func messageEventHandler(ctx context.Context, api *slack.Client, ev *slackevents.MessageEvent,
-	ci *ChannelInfo, ui *UserInfo, destChFn DestinationChannelFunc) error {
+	ci *ChannelInfo, ui *UserInfo, dispatcher ChannelDispatcher, userToken bool) error {
+
+	// Messages posted with a user token are posted as a human user, so they are
+	// not filtered as bot messages and would be aggregated again (infinite loop).
+	if userToken && dispatcher.IsDestination(ev.Channel) {
+		return nil
+	}
 
 	text := ev.Text
 	uid := ev.User
@@ -76,7 +82,7 @@ func messageEventHandler(ctx context.Context, api *slack.Client, ev *slackevents
 		return fmt.Errorf("cannot resolve cnannel name(lookup):%w", err)
 	}
 
-	dstChannel := destChFn(chanName)
+	dstChannel := dispatcher.Dispatch(chanName)
 	if dstChannel == "" {
 		return nil
 	}
@@ -97,8 +103,14 @@ func messageEventHandler(ctx context.Context, api *slack.Client, ev *slackevents
 	}
 
 	fullMsg := msgLink + " " + msg
+	postProf := prof
+	if userToken {
+		// user tokens cannot override username/icon, so put the author name into the text.
+		fullMsg = msgLink + " *" + prof.Name + "* " + msg
+		postProf = nil
+	}
 
-	err = PostMessage(ctx, api, prof, nil, disableUnfurlLink, fullMsg, dstChannel)
+	err = PostMessage(ctx, api, postProf, nil, disableUnfurlLink, fullMsg, dstChannel)
 	if err != nil {
 		return fmt.Errorf("postMessage err:%w", err)
 	}

@@ -27,7 +27,7 @@ func TestCallbackEventHandlerUserChange(t *testing.T) {
 		},
 	}
 
-	err := CallbackEventHandler(context.Background(), nil, ev, nil, ui, nil)
+	err := CallbackEventHandler(context.Background(), nil, ev, nil, ui, nil, false)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "after", ui.name["U001"].Name)
